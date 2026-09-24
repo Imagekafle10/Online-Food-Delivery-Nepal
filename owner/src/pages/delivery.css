@@ -1,0 +1,24 @@
+.section-title {
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.06em; margin: 24px 0 12px;
+}
+
+.riders-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
+}
+.rider-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; transition: border-color 0.2s;
+}
+.rider-card:hover { border-color: var(--border-gold); }
+.rider-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.rider-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: var(--gold-muted); color: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+}
+.rider-meta {
+  font-size: 12.5px; color: var(--text-secondary);
+  display: flex; justify-content: space-between; align-items: center;
+  text-transform: capitalize;
+}

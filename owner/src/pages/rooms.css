@@ -1,0 +1,17 @@
+.rooms-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;
+}
+.room-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; transition: border-color 0.2s;
+}
+.room-card:hover { border-color: var(--border-gold); }
+.room-card-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+}
+.room-number { font-size: 18px; font-weight: 700; }
+.room-meta { font-size: 12px; color: var(--text-secondary); display: flex; gap: 6px; flex-wrap: wrap; }
+.section-title {
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.06em; margin: 24px 0 12px;
+}

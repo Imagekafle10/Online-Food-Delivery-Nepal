@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allows plain HTTP (not HTTPS) to your backend's LAN IP. Android blocks
+  cleartext traffic by default since API 28 — without this, a release APK
+  will fail to reach http://192.168.18.201:5000 even though it works fine
+  on an emulator/debug build. Update the IP below if it ever changes
+  (see lib/config/api_config.dart), or switch the backend to HTTPS and
+  remove this file entirely for production.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">192.168.18.201</domain>
+    </domain-config>
+</network-security-config>
