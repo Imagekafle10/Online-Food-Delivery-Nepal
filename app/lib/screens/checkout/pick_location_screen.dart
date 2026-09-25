@@ -161,8 +161,16 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
             ),
             children: [
               fm.TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.example.bhansa', // your applicationId
+                maxNativeZoom: 20,
+              ),
+              fm.RichAttributionWidget(
+                attributions: [
+                  fm.TextSourceAttribution('OpenStreetMap contributors'),
+                  fm.TextSourceAttribution('CARTO'),
+                ],
               ),
             ],
           ),

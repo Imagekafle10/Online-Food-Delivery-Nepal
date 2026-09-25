@@ -171,8 +171,16 @@ class _RiderTrackingScreenState extends State<RiderTrackingScreen> {
             options: fm.MapOptions(initialCenter: center, initialZoom: _riderLatLng == null ? 13 : 15),
             children: [
               fm.TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.app',
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
+                userAgentPackageName: 'com.example.bhansa', // your applicationId
+                maxNativeZoom: 20,
+              ),
+              fm.RichAttributionWidget(
+                attributions: [
+                  fm.TextSourceAttribution('OpenStreetMap contributors'),
+                  fm.TextSourceAttribution('CARTO'),
+                ],
               ),
               fm.MarkerLayer(markers: [
                 if (_businessLatLng != null)
