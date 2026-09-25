@@ -14,6 +14,10 @@ export interface Business {
   email: string | null
   address: string | null
   city: string | null
+  latitude: number | null
+  longitude: number | null
+  logo_url?: string | null
+  cover_image_url?: string | null
   status: string
   is_open: number
   has_food_ordering: number
@@ -124,26 +128,48 @@ export const fetchAdminBusinesses = createAsyncThunk(
   }
 )
 
+export interface CreateBusinessPayload {
+  name: string
+  type: string
+  description?: string
+  phone?: string
+  email?: string
+  address?: string
+  city?: string
+  latitude?: number
+  longitude?: number
+  owner_full_name: string
+  owner_email?: string
+  owner_phone?: string
+  owner_password: string
+}
+
+// Builds a multipart form when a logo image is attached, so it uploads together with the
+// rest of the onboarding fields in one request; plain JSON otherwise.
+function toBusinessFormData(data: CreateBusinessPayload, image?: File | null): FormData {
+  const fd = new FormData()
+  Object.entries(data).forEach(([key, value]) => {
+    if (value === undefined || value === null) return
+    fd.append(key, String(value))
+  })
+  if (image) fd.append('image', image)
+  return fd
+}
+
 /** super_admin: onboard a restaurant/hotel/cafe + its owner account in one step. Goes live immediately. */
 export const createBusiness = createAsyncThunk(
   'business/create',
   async (
-    payload: {
-      name: string
-      type: string
-      description?: string
-      phone?: string
-      email?: string
-      address?: string
-      city?: string
-      owner_full_name: string
-      owner_email?: string
-      owner_phone?: string
-      owner_password: string
-    },
+    { image, ...payload }: CreateBusinessPayload & { image?: File | null },
     { rejectWithValue }
   ) => {
     try {
+      if (image) {
+        return await apiClient.postForm<Business>(
+          '/businesses/admin',
+          toBusinessFormData(payload, image)
+        )
+      }
       return await apiClient.post<Business>('/businesses/admin', payload)
     } catch (e: unknown) {
       return rejectWithValue(e instanceof Error ? e.message : 'Failed to create restaurant')

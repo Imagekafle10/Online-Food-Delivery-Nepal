@@ -1,7 +1,8 @@
-import { useState, FormEvent } from 'react'
-import { X } from 'lucide-react'
+import { useRef, useState, FormEvent, ChangeEvent } from 'react'
+import { X, ImagePlus, MapPin, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '../../hooks/redux'
 import { createBusiness } from '../../features/business/businessSlice'
+import LocationMapPicker from './LocationMapPicker'
 
 const emptyForm = {
   name: '',
@@ -10,6 +11,8 @@ const emptyForm = {
   email: '',
   address: '',
   city: '',
+  latitude: '',
+  longitude: '',
   owner_full_name: '',
   owner_phone: '',
   owner_email: '',
@@ -22,9 +25,25 @@ export default function AddRestaurantModal({ onClose }: { onClose: () => void })
   const creating = useAppSelector((s) => s.business.creating)
   const [form, setForm] = useState(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [showLocation, setShowLocation] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const set = (key: keyof typeof emptyForm, value: string) =>
     setForm((f) => ({ ...f, [key]: value }))
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setImageFile(file)
+    setImagePreview(file ? URL.createObjectURL(file) : null)
+  }
+
+  const clearImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -41,6 +60,12 @@ export default function AddRestaurantModal({ onClose }: { onClose: () => void })
       setFormError('Owner email or phone is required')
       return
     }
+    const latitude = form.latitude ? Number(form.latitude) : undefined
+    const longitude = form.longitude ? Number(form.longitude) : undefined
+    if ((latitude !== undefined && Number.isNaN(latitude)) || (longitude !== undefined && Number.isNaN(longitude))) {
+      setFormError('Location pin looks invalid, try picking it on the map again')
+      return
+    }
     dispatch(
       createBusiness({
         name: form.name,
@@ -49,14 +74,18 @@ export default function AddRestaurantModal({ onClose }: { onClose: () => void })
         email: form.email || undefined,
         address: form.address || undefined,
         city: form.city || undefined,
+        latitude,
+        longitude,
         owner_full_name: form.owner_full_name,
         owner_phone: form.owner_phone || undefined,
         owner_email: form.owner_email || undefined,
         owner_password: form.owner_password,
+        image: imageFile,
       })
     ).then((res) => {
       if (createBusiness.fulfilled.match(res)) {
         setForm(emptyForm)
+        clearImage()
         onClose()
       } else {
         setFormError((res.payload as string) || 'Failed to create restaurant')
@@ -66,7 +95,7 @@ export default function AddRestaurantModal({ onClose }: { onClose: () => void })
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card modal-card-wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Add restaurant</h2>
           <button className="btn-icon" onClick={onClose}>
@@ -91,6 +120,67 @@ export default function AddRestaurantModal({ onClose }: { onClose: () => void })
               </select>
             </div>
           </div>
+
+          <div className="form-group">
+            <label>Logo / image</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {imagePreview ? (
+                <div style={{ position: 'relative' }}>
+                  <img
+                    src={imagePreview}
+                    alt="Restaurant preview"
+                    style={{
+                      width: 64,
+                      height: 64,
+                      objectFit: 'cover',
+                      borderRadius: 8,
+                      border: '1px solid var(--border, #333)',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    title="Remove image"
+                    onClick={clearImage}
+                    style={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      background: 'var(--danger)',
+                      borderRadius: '50%',
+                    }}
+                  >
+                    <X size={12} color="#fff" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus size={16} /> Upload image
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageChange}
+              />
+              {imagePreview && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Change
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="form-row">
             <div className="form-group">
               <label>Phone</label>
@@ -115,6 +205,35 @@ export default function AddRestaurantModal({ onClose }: { onClose: () => void })
               <label>City</label>
               <input className="input" value={form.city} onChange={(e) => set('city', e.target.value)} />
             </div>
+          </div>
+
+          <div className="form-group">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowLocation((v) => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <MapPin size={14} />
+              {showLocation ? 'Hide location on map' : 'Show location on map'}
+              {showLocation ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {!showLocation && form.latitude && form.longitude && (
+                <span style={{ color: 'var(--text-muted, #999)', fontWeight: 400 }}>
+                  ({Number(form.latitude).toFixed(4)}, {Number(form.longitude).toFixed(4)})
+                </span>
+              )}
+            </button>
+            {showLocation && (
+              <div style={{ marginTop: 10 }}>
+                <LocationMapPicker
+                  latitude={form.latitude}
+                  longitude={form.longitude}
+                  address={form.address}
+                  city={form.city}
+                  onChange={(lat, lng) => setForm((f) => ({ ...f, latitude: lat, longitude: lng }))}
+                />
+              </div>
+            )}
           </div>
 
           <div className="form-group" style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
