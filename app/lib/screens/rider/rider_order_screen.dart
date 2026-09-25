@@ -464,14 +464,12 @@ class _RiderOrderScreenState extends State<RiderOrderScreen> {
           break;
       }
       final delivered = o.status == OrderStatus.onTheWay;
-      if (delivered) {
-        // Stamp the cached copy as delivered (the in-memory `o` still says
-        // "on_the_way" — the PATCH just succeeded but we haven't re-fetched).
-        final done = RiderOrder.fromJson(o.toJson()..['status'] = 'delivered');
-        await rider.addToHistory(done);
-      }
       await rider.refresh();
       if (delivered) {
+        // Backend now has this order as `delivered` — pull the rider's
+        // history so the just-finished job shows up right away instead of
+        // waiting for the next scheduled refresh.
+        unawaited(rider.refreshHistory());
         messenger.showSnackBar(const SnackBar(content: Text('Delivery completed. Great job!')));
         navigator.pop();
         return;

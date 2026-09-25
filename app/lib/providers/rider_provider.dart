@@ -11,8 +11,8 @@ import '../services/location_helper.dart';
 import '../services/rider_service.dart';
 
 /// A completed (or cancelled-while-assigned) delivery kept for the rider's
-/// "History" tab. The backend has no delivery-history endpoint, so this is
-/// recorded on-device the moment a job leaves the active list.
+/// "History" tab. Backed by GET /delivery/history — the same list on every
+/// device — with a local copy cached for instant/offline display.
 class RiderHistoryEntry {
   final RiderOrder order;
   final DateTime finishedAt;
@@ -43,7 +43,6 @@ class RiderProvider extends ChangeNotifier {
 
   static const _kOnline = 'rider_online';
   static const _kHistory = 'rider_history';
-  static const _maxHistory = 200;
   static const _pollEvery = Duration(seconds: 6);
   static const _pingEvery = Duration(seconds: 15);
 
@@ -112,6 +111,7 @@ class RiderProvider extends ChangeNotifier {
   Future<void> reset() async {
     _stopTimers();
     _deliveries = [];
+    _history = [];
     _businesses.clear();
     _loadingBusinesses.clear();
     _knownIds.clear();
@@ -124,6 +124,9 @@ class RiderProvider extends ChangeNotifier {
     onNewAssignments = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kOnline);
+    // Clear the cached history copy too — it belongs to whichever rider was
+    // signed in, and the next login's init() will pull the right one fresh.
+    await prefs.remove(_kHistory);
     _notify();
   }
 
@@ -177,6 +180,13 @@ class RiderProvider extends ChangeNotifier {
 
   // ----------------------------------------------------------------- history
 
+  bool _historyLoading = false;
+  bool get isHistoryLoading => _historyLoading;
+
+  /// Loads the last-known history from the on-device cache instantly (so the
+  /// tab isn't empty while offline or before the network call returns), then
+  /// kicks off [refreshHistory] to replace it with the real thing from the
+  /// backend (GET /delivery/history), which is now the source of truth.
   Future<void> _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_kHistory) ?? const [];
@@ -190,6 +200,7 @@ class RiderProvider extends ChangeNotifier {
         })
         .whereType<RiderHistoryEntry>()
         .toList();
+    unawaited(refreshHistory());
   }
 
   Future<void> _persistHistory() async {
@@ -197,23 +208,29 @@ class RiderProvider extends ChangeNotifier {
     await prefs.setStringList(_kHistory, _history.map((e) => jsonEncode(e.toJson())).toList());
   }
 
-  /// Records a job that just left the active list (delivered, or cancelled
-  /// out from under the rider) into on-device history. Safe to call more
-  /// than once for the same order — the earlier entry is replaced.
-  Future<void> addToHistory(RiderOrder order) async {
-    _history.removeWhere((e) => e.order.id == order.id);
-    _history.insert(0, RiderHistoryEntry(order: order, finishedAt: DateTime.now()));
-    if (_history.length > _maxHistory) {
-      _history = _history.sublist(0, _maxHistory);
-    }
-    await _persistHistory();
+  /// Pulls this rider's delivered/cancelled orders from the backend. Same
+  /// list on every device now, since it's read from the `orders` table
+  /// instead of per-device SharedPreferences. Falls back silently to
+  /// whatever's already cached (e.g. offline) on failure.
+  Future<void> refreshHistory() async {
+    _historyLoading = true;
     _notify();
-  }
-
-  Future<void> clearHistory() async {
-    _history = [];
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kHistory);
+    try {
+      final rows = await _service.history();
+      _history = rows.map((row) {
+        final order = RiderOrder.fromJson(row);
+        final when = DateTime.tryParse(
+              row['delivered_at']?.toString() ?? row['updated_at']?.toString() ?? '',
+            ) ??
+            DateTime.now();
+        return RiderHistoryEntry(order: order, finishedAt: when);
+      }).toList();
+      await _persistHistory();
+      _prefetchBusinesses(_history.map((e) => e.order).toList());
+    } catch (_) {
+      // Keep showing the cached copy — this is a background refresh.
+    }
+    _historyLoading = false;
     _notify();
   }
 

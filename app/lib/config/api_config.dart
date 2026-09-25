@@ -45,6 +45,7 @@ class ApiConfig {
   static const String deliveryOnline = '/delivery/online';
   static const String deliveryOffline = '/delivery/offline';
   static const String deliveryMine = '/delivery/mine';
+  static const String deliveryHistory = '/delivery/history';
   static String deliveryPickedUp(int orderId) => '/delivery/$orderId/picked-up';
   static String deliveryOnTheWay(int orderId) =>
       '/delivery/$orderId/on-the-way';

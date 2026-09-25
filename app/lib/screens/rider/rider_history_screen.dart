@@ -4,10 +4,10 @@ import '../../providers/rider_provider.dart';
 import '../../theme/app_theme.dart';
 import 'rider_deliveries_screen.dart' show StatusPill;
 
-/// Deliveries this rider has completed. Since the backend has no
-/// delivery-history endpoint, entries are recorded on-device the moment a
-/// job is marked delivered (see RiderProvider.addToHistory) and persisted
-/// in SharedPreferences, so they survive app restarts.
+/// Deliveries this rider has completed (or that fell through while assigned
+/// to them). Backed by GET /delivery/history, so it's the same list on every
+/// device the rider signs into — a local copy is kept only so the tab isn't
+/// empty while offline or before the first refresh lands.
 class RiderHistoryScreen extends StatelessWidget {
   const RiderHistoryScreen({super.key});
 
@@ -20,90 +20,93 @@ class RiderHistoryScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Delivery history'),
         actions: [
-          if (entries.isNotEmpty)
-            IconButton(
-              tooltip: 'Clear history',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _confirmClear(context, rider),
-            ),
+          IconButton(
+            tooltip: 'Refresh',
+            icon: rider.isHistoryLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: rider.isHistoryLoading ? null : () => rider.refreshHistory(),
+          ),
         ],
       ),
-      body: entries.isEmpty
-          ? const _EmptyHistory()
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: entries.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) {
-                final entry = entries[i];
-                final o = entry.order;
-                final business = rider.businessOf(o.businessId);
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text('#${o.orderNumber}',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+      body: RefreshIndicator(
+        onRefresh: rider.refreshHistory,
+        child: entries.isEmpty
+            ? LayoutBuilder(
+                builder: (context, constraints) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: const _EmptyHistory(),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: entries.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, i) {
+                  final entry = entries[i];
+                  final o = entry.order;
+                  final business = rider.businessOf(o.businessId);
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text('#${o.orderNumber}',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                              ),
+                              StatusPill(status: o.status),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.storefront, size: 18, color: AppColors.gold),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(business?.name ?? 'Restaurant #${o.businessId}',
+                                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                              ),
+                            ],
+                          ),
+                          if ((o.customerName ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 26),
+                              child: Text('to ${o.customerName}',
+                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5)),
                             ),
-                            StatusPill(status: o.status),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.storefront, size: 18, color: AppColors.gold),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(business?.name ?? 'Restaurant #${o.businessId}',
-                                  style: const TextStyle(fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                        ),
-                        if ((o.customerName ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 26),
-                            child: Text('to ${o.customerName}',
-                                style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5)),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Text('Rs. ${o.totalAmount.toStringAsFixed(0)}',
+                                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.gold)),
+                              const Spacer(),
+                              Text(_formatWhen(entry.finishedAt),
+                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                            ],
                           ),
                         ],
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Text('Rs. ${o.totalAmount.toStringAsFixed(0)}',
-                                style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.gold)),
-                            const Spacer(),
-                            Text(_formatWhen(entry.finishedAt),
-                                style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-    );
-  }
-
-  Future<void> _confirmClear(BuildContext context, RiderProvider rider) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear history?'),
-        content: const Text('This removes your delivery history from this device. It cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Clear')),
-        ],
+                  );
+                },
+              ),
       ),
     );
-    if (ok == true) await rider.clearHistory();
   }
 
   static String _formatWhen(DateTime t) {

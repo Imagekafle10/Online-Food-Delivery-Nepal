@@ -35,6 +35,18 @@ class RiderService {
         .toList();
   }
 
+  /// GET /delivery/history — this rider's delivered/cancelled orders, newest
+  /// first, with business + customer name already joined in by the backend.
+  /// Returns the raw rows (not just `RiderOrder`s) so callers can also read
+  /// `delivered_at` / `updated_at` for a "when" timestamp.
+  Future<List<Map<String, dynamic>>> history({int limit = 100, int offset = 0}) async {
+    final data = await _api.get(
+      ApiConfig.deliveryHistory,
+      query: {'limit': limit, 'offset': offset},
+    );
+    return (data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   /// GET /orders/:id returns `{ order, items, statusLog }`.
   Future<RiderOrder> getOrder(int id) async {
     final data = await _api.get(ApiConfig.order(id));

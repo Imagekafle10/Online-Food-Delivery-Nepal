@@ -140,6 +140,26 @@ export const OrderModel = {
     return rows;
   },
 
+  // Deliveries this rider has finished (delivered) or that fell through while
+  // assigned to them (cancelled) — powers the rider app's "History" tab.
+  // Joins business + customer name in, same as listAllDeliveryOrders, so the
+  // app doesn't need a follow-up request per row.
+  async listHistoryForRider(riderId: number, limit = 50, offset = 0) {
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safeOffset = Math.max(offset, 0);
+    const [rows] = await pool.query<Order[]>(
+      `SELECT o.*, b.name AS business_name, b.city AS business_city, u.full_name AS customer_name
+       FROM orders o
+       JOIN businesses b ON b.id = o.business_id
+       JOIN users u ON u.id = o.user_id
+       WHERE o.rider_id = ? AND o.status IN ('delivered','cancelled')
+       ORDER BY COALESCE(o.delivered_at, o.updated_at) DESC
+       LIMIT ? OFFSET ?`,
+      [riderId, safeLimit, safeOffset]
+    );
+    return rows;
+  },
+
   // Delivery orders that still need a rider (accepted / cooking, no rider yet).
   // Joins business name + customer name so the admin "assign rider" screen doesn't
   // need N extra lookups per row.
