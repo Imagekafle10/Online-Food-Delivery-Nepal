@@ -46,15 +46,16 @@ export const BusinessModel = {
     city?: string;
     latitude?: number;
     longitude?: number;
+    logo_url?: string;
     has_food_ordering?: boolean;
     has_table_booking?: boolean;
     has_room_booking?: boolean;
   }) {
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO businesses
-        (uuid, owner_id, name, slug, type, description, phone, email, address, city, latitude, longitude,
+        (uuid, owner_id, name, slug, type, description, phone, email, address, city, latitude, longitude, logo_url,
          has_food_ordering, has_table_booking, has_room_booking)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         data.uuid,
         data.owner_id,
@@ -68,6 +69,7 @@ export const BusinessModel = {
         data.city || null,
         data.latitude ?? null,
         data.longitude ?? null,
+        data.logo_url || null,
         data.has_food_ordering ?? true,
         data.has_table_booking ?? true,
         data.has_room_booking ?? false,

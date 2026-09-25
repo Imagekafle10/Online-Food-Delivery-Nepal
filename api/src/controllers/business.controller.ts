@@ -3,6 +3,19 @@ import { asyncHandler } from '../utils/AppError';
 import { ok, created } from '../utils/response.util';
 import { BusinessService } from '../services/business.service';
 
+// The admin-create form may arrive as JSON or as multipart (when a logo image is attached).
+// Multipart sends every field as a string, so convert lat/lng back to numbers and attach
+// the uploaded image path, same as the menu item image handling.
+function parseAdminCreateBody(req: Request): Record<string, any> {
+  const body: Record<string, any> = { ...req.body };
+  if (req.file) body.logo_url = `/uploads/${req.file.filename}`;
+
+  const toNumber = (v: any) => (typeof v === 'string' ? (v.trim() === '' ? undefined : Number(v)) : v);
+  if (body.latitude !== undefined) body.latitude = toNumber(body.latitude);
+  if (body.longitude !== undefined) body.longitude = toNumber(body.longitude);
+  return body;
+}
+
 export const BusinessController = {
   register: asyncHandler(async (req: Request, res: Response) => {
     const business = await BusinessService.register(req.user!.id, req.body);
@@ -11,7 +24,7 @@ export const BusinessController = {
 
   // super_admin: onboard a restaurant/hotel/cafe + its owner account in one step.
   adminCreate: asyncHandler(async (req: Request, res: Response) => {
-    const business = await BusinessService.adminCreate(req.body);
+    const business = await BusinessService.adminCreate(parseAdminCreateBody(req) as any);
     created(res, business, 'Restaurant created');
   }),
 

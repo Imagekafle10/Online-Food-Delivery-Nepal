@@ -90,6 +90,9 @@ export const BusinessService = {
     email?: string;
     address?: string;
     city?: string;
+    latitude?: number;
+    longitude?: number;
+    logo_url?: string;
     owner_full_name: string;
     owner_email?: string;
     owner_phone?: string;
@@ -101,6 +104,12 @@ export const BusinessService = {
     }
     if (!data.owner_email && !data.owner_phone) {
       throw new AppError("Owner email or phone is required", 422);
+    }
+    if (data.latitude !== undefined && (typeof data.latitude !== "number" || data.latitude < -90 || data.latitude > 90)) {
+      throw new AppError("Latitude must be a number between -90 and 90", 422);
+    }
+    if (data.longitude !== undefined && (typeof data.longitude !== "number" || data.longitude < -180 || data.longitude > 180)) {
+      throw new AppError("Longitude must be a number between -180 and 180", 422);
     }
 
     const { user: owner } = await AuthService.register(
@@ -128,6 +137,9 @@ export const BusinessService = {
       email: data.email,
       address: data.address,
       city: data.city,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      logo_url: data.logo_url,
       has_food_ordering: true,
       has_table_booking,
       has_room_booking,
