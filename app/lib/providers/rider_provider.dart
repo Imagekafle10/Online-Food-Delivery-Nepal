@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,6 +9,26 @@ import '../models/rider_order.dart';
 import '../services/api_client.dart';
 import '../services/location_helper.dart';
 import '../services/rider_service.dart';
+
+/// A completed (or cancelled-while-assigned) delivery kept for the rider's
+/// "History" tab. The backend has no delivery-history endpoint, so this is
+/// recorded on-device the moment a job leaves the active list.
+class RiderHistoryEntry {
+  final RiderOrder order;
+  final DateTime finishedAt;
+
+  RiderHistoryEntry({required this.order, required this.finishedAt});
+
+  Map<String, dynamic> toJson() => {
+        'order': order.toJson(),
+        'finishedAt': finishedAt.toIso8601String(),
+      };
+
+  factory RiderHistoryEntry.fromJson(Map<String, dynamic> j) => RiderHistoryEntry(
+        order: RiderOrder.fromJson(Map<String, dynamic>.from(j['order'] as Map)),
+        finishedAt: DateTime.tryParse(j['finishedAt']?.toString() ?? '') ?? DateTime.now(),
+      );
+}
 
 /// Holds everything the rider app needs: online state, active deliveries,
 /// live GPS, and the background polling / location-ping timers.
@@ -21,10 +42,13 @@ class RiderProvider extends ChangeNotifier {
   final RiderService _service = RiderService();
 
   static const _kOnline = 'rider_online';
+  static const _kHistory = 'rider_history';
+  static const _maxHistory = 200;
   static const _pollEvery = Duration(seconds: 6);
   static const _pingEvery = Duration(seconds: 15);
 
   List<RiderOrder> _deliveries = [];
+  List<RiderHistoryEntry> _history = [];
   final Map<int, RiderBusiness> _businesses = {};
   final Set<int> _loadingBusinesses = {};
   final Set<int> _knownIds = {};
@@ -42,6 +66,8 @@ class RiderProvider extends ChangeNotifier {
   void Function(int count)? onNewAssignments;
 
   List<RiderOrder> get deliveries => _deliveries;
+  /// Completed deliveries, newest first — powers the "History" tab.
+  List<RiderHistoryEntry> get history => _history;
   bool get isOnline => _online;
   bool get isToggling => _toggling;
   bool get hasLoaded => _loaded;
@@ -57,6 +83,7 @@ class RiderProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     _online = prefs.getBool(_kOnline) ?? false;
+    await _loadHistory();
 
     await refresh();
 
@@ -146,6 +173,48 @@ class RiderProvider extends ChangeNotifier {
   Future<void> _persistOnline() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kOnline, _online);
+  }
+
+  // ----------------------------------------------------------------- history
+
+  Future<void> _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_kHistory) ?? const [];
+    _history = raw
+        .map((s) {
+          try {
+            return RiderHistoryEntry.fromJson(jsonDecode(s) as Map<String, dynamic>);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<RiderHistoryEntry>()
+        .toList();
+  }
+
+  Future<void> _persistHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kHistory, _history.map((e) => jsonEncode(e.toJson())).toList());
+  }
+
+  /// Records a job that just left the active list (delivered, or cancelled
+  /// out from under the rider) into on-device history. Safe to call more
+  /// than once for the same order — the earlier entry is replaced.
+  Future<void> addToHistory(RiderOrder order) async {
+    _history.removeWhere((e) => e.order.id == order.id);
+    _history.insert(0, RiderHistoryEntry(order: order, finishedAt: DateTime.now()));
+    if (_history.length > _maxHistory) {
+      _history = _history.sublist(0, _maxHistory);
+    }
+    await _persistHistory();
+    _notify();
+  }
+
+  Future<void> clearHistory() async {
+    _history = [];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kHistory);
+    _notify();
   }
 
   // ----------------------------------------------------------------- polling

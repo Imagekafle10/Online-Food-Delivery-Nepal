@@ -16,6 +16,8 @@ class Business {
   final int avgPrepTimeMins;
   final bool isOpen;
   final String status;
+  final double? latitude;
+  final double? longitude;
 
   Business({
     required this.id,
@@ -35,6 +37,8 @@ class Business {
     required this.avgPrepTimeMins,
     required this.isOpen,
     required this.status,
+    this.latitude,
+    this.longitude,
   });
 
   factory Business.fromJson(Map<String, dynamic> json) => Business(
@@ -55,6 +59,8 @@ class Business {
         avgPrepTimeMins: (json['avg_prep_time_mins'] as num?)?.toInt() ?? 20,
         isOpen: _asBool(json['is_open'], true),
         status: json['status']?.toString() ?? 'approved',
+        latitude: _asDouble(json['latitude']),
+        longitude: _asDouble(json['longitude']),
       );
 }
 

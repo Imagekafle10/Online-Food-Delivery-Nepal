@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UtensilsCrossed, ShoppingBag, CheckCircle2, Ban, Trash2 } from 'lucide-react'
+import { UtensilsCrossed, ShoppingBag, CheckCircle2, Ban, Trash2, Plus } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '../hooks/redux'
 import {
   fetchAdminBusinesses,
@@ -11,6 +11,7 @@ import {
 } from '../features/business/businessSlice'
 import Pagination from '../components/ui/Pagination'
 import RestaurantSearch from '../components/ui/RestaurantSearch'
+import AddRestaurantModal from '../components/ui/AddRestaurantModal'
 
 const PAGE_SIZE = 20
 
@@ -32,6 +33,7 @@ export default function AdminBusinessesPage() {
   const [status, setStatus] = useState('')
   const [type, setType] = useState('')
   const [offset, setOffset] = useState(0)
+  const [showAddRestaurant, setShowAddRestaurant] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -104,10 +106,17 @@ export default function AdminBusinessesPage() {
             orders
           </p>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={reload}>
-          Refresh
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowAddRestaurant(true)}>
+            <Plus size={14} /> Add restaurant
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={reload}>
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {showAddRestaurant && <AddRestaurantModal onClose={() => setShowAddRestaurant(false)} />}
 
       {error && <div className="alert alert-error">{error}</div>}
 

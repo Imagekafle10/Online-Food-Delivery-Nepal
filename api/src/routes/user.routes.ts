@@ -8,6 +8,7 @@ const router = Router();
 router.use(authenticate, requireRole('super_admin'));
 
 router.get('/admin/all', UserController.adminList);
+router.post('/admin', UserController.create);
 router.patch('/:id/suspend', UserController.suspend);
 router.patch('/:id/activate', UserController.activate);
 router.delete('/:id', UserController.remove);

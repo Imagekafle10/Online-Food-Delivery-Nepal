@@ -8,6 +8,7 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+**/maps.env.json
 
 # Flutter / Dart
 .dart_tool/

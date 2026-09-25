@@ -1,131 +1,90 @@
 -- =====================================================================
--- Dummy seed data for the Foodie app / Multi Hotel-Restaurant backend
--- Run AFTER migrations/schema.sql has already created the tables:
+-- DUMMY SEED DATA  (for testing only)
+-- 1 super admin + 5 business owners + 5 restaurants/cafes + sample menu
 --
---   mysql -u root -p hotel_management_app < seed_dummy_data.sql
+-- Password hashes below are real bcrypt ($2b$, cost 10) - no changes needed.
 --
--- Login credentials created by this script (password is the same for both):
---   Business owner -> identifier: owner@foodie.test   password: password123
---   Customer       -> identifier: customer@foodie.test password: password123
---
--- The password hashes below are real bcrypt hashes (10 rounds) of
--- "password123" - login will work immediately, no need to register
--- through the app for these two accounts.
+-- Run:  mysql -u root -p < seed_dummy_data.sql
 -- =====================================================================
-
 USE hotel_management_app;
 
+
 -- ---------------------------------------------------------------------
--- USERS
+-- USERS  (login = email or phone)
+--   admin  : admin@bhansa.test   / Admin@123
+--   owners : owner1..5@bhansa.test / Owner@123
 -- ---------------------------------------------------------------------
-INSERT INTO users (uuid, full_name, email, phone, password_hash, role, is_active, is_verified)
+INSERT INTO users (uuid, full_name, email, phone, password_hash, role, is_active, is_verified) VALUES
+(UUID(), 'Bhansa Admin',    'admin@bhansa.test',  '9800000000', '$2b$10$Wq9iQ/2dPk60q18JbO/ai.gkbj7m8xgJzGATzla9PK1TN/z52Kada', 'super_admin',    1, 1),
+(UUID(), 'Ramesh Chaudhary','owner1@bhansa.test', '9800000001', '$2b$10$w7oOasZDMTNQjH1HlGGtAefudUbfnIJMmTtipvmDAnuS8Q903tgTC', 'business_owner', 1, 1),
+(UUID(), 'Sita Bohara',     'owner2@bhansa.test', '9800000002', '$2b$10$w7oOasZDMTNQjH1HlGGtAefudUbfnIJMmTtipvmDAnuS8Q903tgTC', 'business_owner', 1, 1),
+(UUID(), 'Anil Joshi',      'owner3@bhansa.test', '9800000003', '$2b$10$w7oOasZDMTNQjH1HlGGtAefudUbfnIJMmTtipvmDAnuS8Q903tgTC', 'business_owner', 1, 1),
+(UUID(), 'Pooja Rawal',     'owner4@bhansa.test', '9800000004', '$2b$10$w7oOasZDMTNQjH1HlGGtAefudUbfnIJMmTtipvmDAnuS8Q903tgTC', 'business_owner', 1, 1),
+(UUID(), 'Kiran Thapa',     'owner5@bhansa.test', '9800000005', '$2b$10$w7oOasZDMTNQjH1HlGGtAefudUbfnIJMmTtipvmDAnuS8Q903tgTC', 'business_owner', 1, 1);
+
+-- ---------------------------------------------------------------------
+-- BUSINESSES  (3 restaurants + 2 cafes, all approved and open)
+-- ---------------------------------------------------------------------
+INSERT INTO businesses
+ (uuid, owner_id, name, slug, type, description, phone, email, address, city, latitude, longitude,
+  has_food_ordering, has_table_booking, has_room_booking, delivery_radius_km, base_delivery_fee,
+  min_order_amount, avg_prep_time_mins, status, is_open, opens_at, closes_at)
 VALUES
-  (UUID(), 'Raj Restaurant Owner', 'owner@foodie.test', '9800000001',
-   '$2b$10$LLwahSep/o.JMzU02kxaMurL3Qc3ZqvWhdktpyI3Prrt.wQX13Yku', 'business_owner', 1, 1),
-  (UUID(), 'Test Customer', 'customer@foodie.test', '9800000002',
-   '$2b$10$z0xyXEIqiSpQnL4K.rS5Q.8FMBRTHTjnFOJPFGky.M6SbfIJDEMgm', 'customer', 1, 1);
+(UUID(), (SELECT id FROM users WHERE email='owner1@bhansa.test'),
+ 'Himalayan Spice Kitchen', 'himalayan-spice-kitchen', 'restaurant',
+ 'Nepali thali, curries and tandoor specials.', '9810000001', 'spice@bhansa.test',
+ 'Traffic Chowk, Butwal', 'Butwal', 27.7005000, 83.4485000,
+ 1, 1, 0, 6.00, 60.00, 200.00, 25, 'approved', 1, '09:00:00', '22:00:00'),
 
-SET @owner_id = (SELECT id FROM users WHERE email = 'owner@foodie.test');
-SET @customer_id = (SELECT id FROM users WHERE email = 'customer@foodie.test');
+(UUID(), (SELECT id FROM users WHERE email='owner2@bhansa.test'),
+ 'Karnali Momo House', 'karnali-momo-house', 'restaurant',
+ 'Steamed, fried and jhol momo with fresh achar.', '9810000002', 'momo@bhansa.test',
+ 'Milanchowk, Butwal', 'Butwal', 27.6920000, 83.4470000,
+ 1, 1, 0, 5.00, 50.00, 150.00, 20, 'approved', 1, '10:00:00', '21:30:00'),
 
--- ---------------------------------------------------------------------
--- BUSINESS - pre-approved and open, so it shows up in Discover immediately
--- ---------------------------------------------------------------------
-INSERT INTO businesses (
-  uuid, owner_id, name, slug, type, description, logo_url, cover_image_url,
-  phone, email, address, city, latitude, longitude,
-  has_food_ordering, has_table_booking, has_room_booking,
-  delivery_radius_km, base_delivery_fee, min_order_amount, avg_prep_time_mins,
-  status, is_open, opens_at, closes_at
-) VALUES (
-  UUID(), @owner_id, 'Golden Spoon Restaurant', 'golden-spoon-restaurant', 'restaurant',
-  'Authentic Nepali & Indian cuisine, made fresh and delivered hot.',
-  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200',
-  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800',
-  '9800000001', 'owner@foodie.test', 'New Road', 'Nepalgunj', 28.0500, 81.6167,
-  1, 1, 0,
-  5.00, 60.00, 200.00, 25,
-  'approved', 1, '08:00:00', '22:00:00'
-);
+(UUID(), (SELECT id FROM users WHERE email='owner3@bhansa.test'),
+ 'Tharu Bhoj Ghar', 'tharu-bhoj-ghar', 'restaurant',
+ 'Traditional Tharu cuisine: dhikri, ghonghi and sidhra.', '9810000003', 'tharu@bhansa.test',
+ 'Kalikanagar, Butwal', 'Butwal', 27.6800000, 83.4430000,
+ 1, 1, 0, 5.00, 50.00, 250.00, 30, 'approved', 1, '11:00:00', '21:00:00'),
 
-SET @business_id = (SELECT id FROM businesses WHERE slug = 'golden-spoon-restaurant');
+(UUID(), (SELECT id FROM users WHERE email='owner4@bhansa.test'),
+ 'Brew & Bean Cafe', 'brew-and-bean-cafe', 'cafe',
+ 'Coffee, shakes, sandwiches and desserts.', '9810000004', 'brew@bhansa.test',
+ 'Manigram Chowk, Manigram', 'Manigram', 27.6610000, 83.4420000,
+ 1, 1, 0, 4.00, 40.00, 100.00, 12, 'approved', 1, '07:30:00', '21:00:00'),
 
--- A second business so the list/filter UI has more than one card to show
-INSERT INTO businesses (
-  uuid, owner_id, name, slug, type, description, logo_url, cover_image_url,
-  phone, email, address, city, latitude, longitude,
-  has_food_ordering, has_table_booking, has_room_booking,
-  delivery_radius_km, base_delivery_fee, min_order_amount, avg_prep_time_mins,
-  status, is_open, opens_at, closes_at
-) VALUES (
-  UUID(), @owner_id, 'Cafe Mocha', 'cafe-mocha', 'cafe',
-  'Coffee, pastries, and quick bites.',
-  'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=200',
-  'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800',
-  '9800000003', 'cafemocha@foodie.test', 'Surkhet Road', 'Nepalgunj', 28.0520, 81.6200,
-  1, 1, 0,
-  4.00, 40.00, 100.00, 15,
-  'approved', 1, '07:00:00', '21:00:00'
-);
+(UUID(), (SELECT id FROM users WHERE email='owner5@bhansa.test'),
+ 'Cafe Mahakali', 'cafe-mahakali', 'cafe',
+ 'Cozy cafe with tea, baked goods and light snacks.', '9810000005', 'mahakali@bhansa.test',
+ 'Manigram Bazaar, Manigram', 'Manigram', 27.6580000, 83.4400000,
+ 1, 1, 0, 4.00, 40.00, 100.00, 10, 'approved', 1, '08:00:00', '20:30:00');
 
-SET @cafe_id = (SELECT id FROM businesses WHERE slug = 'cafe-mocha');
+-- Link each owner as manager of their own business
+INSERT INTO business_staff (business_id, user_id, role)
+SELECT id, owner_id, 'manager' FROM businesses
+WHERE slug IN ('himalayan-spice-kitchen','karnali-momo-house','tharu-bhoj-ghar','brew-and-bean-cafe','cafe-mahakali');
 
 -- ---------------------------------------------------------------------
--- MENU - Golden Spoon Restaurant
+-- SAMPLE MENU (one category per business, 2 items each)
 -- ---------------------------------------------------------------------
-INSERT INTO menu_categories (business_id, name, sort_order, is_active) VALUES
-  (@business_id, 'Starters', 1, 1),
-  (@business_id, 'Main Course', 2, 1),
-  (@business_id, 'Beverages', 3, 1);
+INSERT INTO menu_categories (business_id, name, sort_order)
+SELECT id, 'Popular', 1 FROM businesses
+WHERE slug IN ('himalayan-spice-kitchen','karnali-momo-house','tharu-bhoj-ghar','brew-and-bean-cafe','cafe-mahakali');
 
-SET @cat_starters = (SELECT id FROM menu_categories WHERE business_id = @business_id AND name = 'Starters');
-SET @cat_mains = (SELECT id FROM menu_categories WHERE business_id = @business_id AND name = 'Main Course');
-SET @cat_bev = (SELECT id FROM menu_categories WHERE business_id = @business_id AND name = 'Beverages');
-
-INSERT INTO menu_items (business_id, category_id, name, description, price, discount_percent, image_url, is_veg, is_available, prep_time_mins, tags) VALUES
-  (@business_id, @cat_starters, 'Veg Momo', 'Steamed dumplings with veggie filling, served with tomato achar', 180.00, NULL,
-    'https://images.unsplash.com/photo-1626804475297-411d9e582e12?w=400', 1, 1, 15, 'popular,spicy'),
-  (@business_id, @cat_starters, 'Chicken Chili', 'Crispy chicken tossed in a spicy chili sauce', 320.00, 12.50,
-    'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400', 0, 1, 20, 'popular'),
-  (@business_id, @cat_mains, 'Chicken Biryani', 'Fragrant basmati rice cooked with spiced chicken', 420.00, NULL,
-    'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400', 0, 1, 30, 'bestseller'),
-  (@business_id, @cat_mains, 'Paneer Butter Masala', 'Cottage cheese cubes in a rich tomato-butter gravy', 350.00, NULL,
-    'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400', 1, 1, 25, 'popular'),
-  (@business_id, @cat_mains, 'Veg Thali', 'Dal, rice, two curries, salad and pickle', 300.00, NULL,
-    'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400', 1, 1, 20, NULL),
-  (@business_id, @cat_bev, 'Masala Tea', 'Spiced milk tea', 60.00, NULL,
-    'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=400', 1, 1, 5, NULL),
-  (@business_id, @cat_bev, 'Fresh Lime Soda', 'Sweet or salted, served chilled', 90.00, NULL,
-    'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=400', 1, 1, 5, NULL);
-
--- ---------------------------------------------------------------------
--- MENU - Cafe Mocha
--- ---------------------------------------------------------------------
-INSERT INTO menu_categories (business_id, name, sort_order, is_active) VALUES
-  (@cafe_id, 'Coffee', 1, 1),
-  (@cafe_id, 'Snacks', 2, 1);
-
-SET @cat_coffee = (SELECT id FROM menu_categories WHERE business_id = @cafe_id AND name = 'Coffee');
-SET @cat_snacks = (SELECT id FROM menu_categories WHERE business_id = @cafe_id AND name = 'Snacks');
-
-INSERT INTO menu_items (business_id, category_id, name, description, price, discount_percent, image_url, is_veg, is_available, prep_time_mins, tags) VALUES
-  (@cafe_id, @cat_coffee, 'Cappuccino', 'Espresso with steamed milk foam', 150.00, NULL,
-    'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400', 1, 1, 8, 'popular'),
-  (@cafe_id, @cat_coffee, 'Cafe Latte', 'Smooth espresso with steamed milk', 160.00, NULL,
-    'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400', 1, 1, 8, NULL),
-  (@cafe_id, @cat_snacks, 'Chicken Sandwich', 'Grilled chicken, lettuce and mayo on toasted bread', 220.00, NULL,
-    'https://images.unsplash.com/photo-1553909489-cd47e0ef937f?w=400', 0, 1, 12, NULL),
-  (@cafe_id, @cat_snacks, 'Chocolate Croissant', 'Buttery, flaky, filled with chocolate', 140.00, NULL,
-    'https://images.unsplash.com/photo-1623334044303-241021148842?w=400', 1, 1, 5, 'popular');
-
--- ---------------------------------------------------------------------
--- CUSTOMER'S SAVED ADDRESS - so checkout has one ready to select
--- ---------------------------------------------------------------------
-INSERT INTO user_addresses (user_id, label, address_line, city, latitude, longitude, is_default)
-VALUES (@customer_id, 'Home', 'Ward 5, Dhambhoji Chowk', 'Nepalgunj', 28.0530, 81.6180, 1);
-
--- ---------------------------------------------------------------------
--- Done. Quick sanity check:
--- ---------------------------------------------------------------------
-SELECT id, name, type, status, is_open, has_food_ordering FROM businesses;
-SELECT id, name, price, is_available FROM menu_items ORDER BY business_id, category_id;
+INSERT INTO menu_items (business_id, category_id, name, description, price, is_veg, prep_time_mins)
+SELECT b.id, c.id, v.item_name, v.descr, v.price, v.is_veg, v.prep
+FROM (
+  SELECT 'himalayan-spice-kitchen' AS slug, 'Chicken Thali'  AS item_name, 'Rice, dal, chicken curry, saag, achar' AS descr, 350.00 AS price, 0 AS is_veg, 25 AS prep
+  UNION ALL SELECT 'himalayan-spice-kitchen', 'Paneer Butter Masala', 'Creamy paneer curry with naan', 320.00, 1, 20
+  UNION ALL SELECT 'karnali-momo-house', 'Chicken Steam Momo', '10 pcs with tomato achar', 180.00, 0, 15
+  UNION ALL SELECT 'karnali-momo-house', 'Veg Jhol Momo', '10 pcs in spicy soup', 160.00, 1, 15
+  UNION ALL SELECT 'tharu-bhoj-ghar', 'Dhikri Set', 'Rice-flour dhikri with gravy and pickle', 300.00, 1, 30
+  UNION ALL SELECT 'tharu-bhoj-ghar', 'Ghonghi Curry', 'Snail curry, Tharu style', 380.00, 0, 30
+  UNION ALL SELECT 'brew-and-bean-cafe', 'Cappuccino', 'Espresso with steamed milk foam', 220.00, 1, 8
+  UNION ALL SELECT 'brew-and-bean-cafe', 'Club Sandwich', 'Grilled, with fries', 280.00, 0, 12
+  UNION ALL SELECT 'cafe-mahakali', 'Masala Tea', 'Fresh ginger and cardamom tea', 80.00, 1, 5
+  UNION ALL SELECT 'cafe-mahakali', 'Chocolate Brownie', 'Warm brownie with ice cream', 200.00, 1, 8
+) v
+JOIN businesses b ON b.slug = v.slug
+JOIN menu_categories c ON c.business_id = b.id AND c.name = 'Popular';

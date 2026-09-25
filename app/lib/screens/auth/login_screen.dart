@@ -29,8 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
-    final ok =
-        await auth.login(_identifierCtrl.text.trim(), _passwordCtrl.text);
+    final ok = await auth.login(
+      _identifierCtrl.text.trim(),
+      _passwordCtrl.text,
+    );
     if (!mounted) return;
     if (ok) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -75,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 6),
                 const Text('Sign in to order delicious food, fast.',
                     style: TextStyle(color: AppColors.textMuted)),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _identifierCtrl,
                   decoration: const InputDecoration(
@@ -85,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -104,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Required' : null,
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
                 GoldButton(
                     label: 'LOG IN',
                     onPressed: _submit,
