@@ -36,6 +36,14 @@ export const DeliveryController = {
     ok(res, orders);
   }),
 
+  history: asyncHandler(async (req: Request, res: Response) => {
+    const riderId = await riderIdOfUser(req.user!.id);
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const offset = req.query.offset ? Number(req.query.offset) : undefined;
+    const orders = await DeliveryService.history(riderId, limit, offset);
+    ok(res, orders);
+  }),
+
   pickedUp: asyncHandler(async (req: Request, res: Response) => {
     const riderId = await riderIdOfUser(req.user!.id);
     const order = await DeliveryService.markPickedUp(Number(req.params.orderId), riderId);

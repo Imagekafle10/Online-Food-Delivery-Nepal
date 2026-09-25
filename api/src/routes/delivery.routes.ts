@@ -11,6 +11,7 @@ router.post('/online', requireRole('rider'), DeliveryController.goOnline);
 router.post('/offline', requireRole('rider'), DeliveryController.goOffline);
 router.post('/ping', requireRole('rider'), DeliveryController.ping);
 router.get('/mine', requireRole('rider'), DeliveryController.myDeliveries);
+router.get('/history', requireRole('rider'), DeliveryController.history);
 router.post('/:orderId/picked-up', requireRole('rider'), DeliveryController.pickedUp);
 router.post('/:orderId/on-the-way', requireRole('rider'), DeliveryController.onTheWay);
 router.post('/:orderId/delivered', requireRole('rider'), DeliveryController.delivered);

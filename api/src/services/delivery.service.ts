@@ -107,6 +107,10 @@ export const DeliveryService = {
     return OrderModel.listActiveForRider(riderId);
   },
 
+  async history(riderId: number, limit?: number, offset?: number) {
+    return OrderModel.listHistoryForRider(riderId, limit, offset);
+  },
+
   async unassignedReadyOrders(businessId?: number) {
     return OrderModel.listUnassignedReady(businessId);
   },
