@@ -23,13 +23,19 @@ jobs:
           flutter-version: "3.35.0"
           channel: stable
 
+      - name: Create Maps configuration
+        env:
+          MAPS_ENV_JSON: ${{ secrets.MAPS_ENV_JSON }}
+        run: |
+          printf '%s' "$MAPS_ENV_JSON" > app/maps.env.json
+
       - name: Flutter pub get
         working-directory: app
         run: flutter pub get
 
       - name: Build release APK
         working-directory: app
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define-from-file=maps.env.json
 
       - name: Rename APK
         run: |
