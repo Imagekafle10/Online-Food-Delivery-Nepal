@@ -88,6 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.username],
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -106,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Required' : null,
+                  autofillHints: const [AutofillHints.password],
                 ),
                 const SizedBox(height: 20),
                 GoldButton(
