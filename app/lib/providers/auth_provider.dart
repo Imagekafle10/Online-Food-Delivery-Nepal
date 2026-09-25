@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/api_client.dart';
-import '../services/auth_service.dart' show AuthService, SavedAccount;
+import '../services/auth_service.dart' show AuthService;
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -41,13 +41,6 @@ class AuthProvider extends ChangeNotifier {
         final result = await _authService.login(identifier: identifier, password: password);
         _user = result.user;
       });
-
-  /// Saved logins on this device, most recently used first.
-  Future<List<SavedAccount>> savedAccounts() => _authService.savedAccounts();
-
-  Future<SavedAccount?> mostRecentAccount() => _authService.mostRecentAccount();
-
-  Future<void> forgetSavedAccount(String identifier) => _authService.removeSavedAccount(identifier);
 
   Future<bool> register({
     required String fullName,

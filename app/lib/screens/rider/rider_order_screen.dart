@@ -933,16 +933,8 @@ class _RiderOrderScreenState extends State<RiderOrderScreen> {
       ),
       children: [
         fm.TileLayer(
-          urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-          subdomains: const ['a', 'b', 'c', 'd'],
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.example.bhansa', // your applicationId
-          maxNativeZoom: 20,
-        ),
-        fm.RichAttributionWidget(
-          attributions: [
-            fm.TextSourceAttribution('OpenStreetMap contributors'),
-            fm.TextSourceAttribution('CARTO'),
-          ],
         ),
         if (_routePoints.length >= 2)
           fm.PolylineLayer(polylines: [
