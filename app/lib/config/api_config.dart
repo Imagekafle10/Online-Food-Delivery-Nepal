@@ -1,29 +1,24 @@
 /// Central place to point the app at your backend.
 ///
-/// The backend in `migrations.zip` boots on `http://localhost:5000` and
-/// mounts everything under `/api` (see src/app.ts / src/routes/index.ts).
-///
-/// - Android emulator -> use 10.0.2.2 instead of localhost
-/// - iOS simulator    -> localhost works
-/// - Physical device / production -> your real host, e.g. https://api.yourapp.com
+/// Pick the server at run/build time with a dart-define file:
+///   flutter run --dart-define-from-file=env.local.json
+///   flutter run --dart-define-from-file=env.live.json
+/// With no file, the app uses the live server below.
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.18.201:5000/api',
+    defaultValue: 'https://online-food-delivery-nepal.onrender.com/api',
   );
 
-  // Socket.io server root (same host, no /api suffix — see src/utils/socket.ts)
+  // Socket.io server root (same host, no /api suffix)
   static const String socketUrl = String.fromEnvironment(
     'SOCKET_URL',
-    defaultValue: 'http://192.168.18.201:5000',
+    defaultValue: 'https://online-food-delivery-nepal.onrender.com',
   );
 
-  // Google Maps / Geocoding key. Never hardcode the real value here — pass
-  // it at build/run time instead, e.g.:
-  //   flutter run --dart-define=MAPS_API_KEY=your_key_here
-  // or put it in a git-ignored dart-define file and use
-  // --dart-define-from-file=maps.env.json
+  // Google Maps / Geocoding key. Never hardcode it; pass it in the env file.
   static const String mapsApiKey = String.fromEnvironment('MAPS_API_KEY');
+
   // --- Auth ---
   static const String register = '/auth/register';
   static const String login = '/auth/login';

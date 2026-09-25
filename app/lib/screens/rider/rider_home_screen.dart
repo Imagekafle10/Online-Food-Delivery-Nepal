@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/rider_provider.dart';
 import 'rider_deliveries_screen.dart';
+import 'rider_history_screen.dart';
 import 'rider_profile_screen.dart';
 
-/// Root of the rider experience: Deliveries + Profile tabs.
+/// Root of the rider experience: Deliveries + History + Profile tabs.
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
 
@@ -43,9 +44,10 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> with WidgetsBindingOb
     return Scaffold(
       body: IndexedStack(
         index: _index,
-        children: const [RiderDeliveriesScreen(), RiderProfileScreen()],
+        children: const [RiderDeliveriesScreen(), RiderHistoryScreen(), RiderProfileScreen()],
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         items: [
@@ -58,6 +60,8 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> with WidgetsBindingOb
             activeIcon: const Icon(Icons.two_wheeler),
             label: 'Deliveries',
           ),
+          const BottomNavigationBarItem(
+              icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
           const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
         ],

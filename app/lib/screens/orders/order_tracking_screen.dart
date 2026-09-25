@@ -5,6 +5,7 @@ import '../../services/order_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/order_status_stepper.dart';
 import '../home/home_screen.dart';
+import 'rider_tracking_screen.dart';
 
 /// Polls GET /api/orders/:id every few seconds for status updates.
 /// For true realtime, join Socket.io room `order:<id>` per the backend's
@@ -129,6 +130,24 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                             fontSize: 16, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 16),
                     OrderStatusStepper(current: _order!.status),
+                    if (_order!.hasRiderAssigned) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => RiderTrackingScreen(orderId: _order!.id)),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.gold,
+                            side: const BorderSide(color: AppColors.gold),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          icon: const Icon(Icons.two_wheeler),
+                          label: const Text('Track Rider'),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     const Text('Items',
                         style: TextStyle(

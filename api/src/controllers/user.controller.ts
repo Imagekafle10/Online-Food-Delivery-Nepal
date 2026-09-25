@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { asyncHandler, AppError } from '../utils/AppError';
-import { ok } from '../utils/response.util';
+import { ok, created } from '../utils/response.util';
 import { UserModel } from '../models/user.model';
 import { RiderModel } from '../models/rider.model';
 import { BusinessModel } from '../models/business.model';
+import { AuthService } from '../services/auth.service';
 
 async function loadTarget(req: Request) {
   const id = Number(req.params.id);
@@ -14,6 +15,21 @@ async function loadTarget(req: Request) {
 }
 
 export const UserController = {
+  // super_admin: onboard any account (customer, business_owner, staff, rider, super_admin) from the panel.
+  create: asyncHandler(async (req: Request, res: Response) => {
+    const { full_name, email, phone, password, role } = req.body;
+    if (!full_name || !password) throw new AppError('Full name and password are required', 422);
+    if (!email && !phone) throw new AppError('Email or phone is required', 422);
+
+    // AuthService.register already creates the riders row when role === 'rider'.
+    const result = await AuthService.register(
+      { full_name, email, phone, password, role },
+      { allowAnyRole: true }
+    );
+
+    created(res, result.user, 'User created');
+  }),
+
   // super_admin: search / filter every account
   adminList: asyncHandler(async (req: Request, res: Response) => {
     const { search, role, status, limit, offset } = req.query;

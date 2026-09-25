@@ -6,7 +6,10 @@ import { AppError } from '../utils/AppError';
 import { UserRole } from '../types';
 
 export const AuthService = {
-  async register(data: { full_name: string; email?: string; phone?: string; password: string; role?: UserRole }) {
+  async register(
+    data: { full_name: string; email?: string; phone?: string; password: string; role?: UserRole },
+    options?: { allowAnyRole?: boolean }
+  ) {
     if (!data.email && !data.phone) throw new AppError('Email or phone is required', 422);
 
     if (data.email) {
@@ -20,7 +23,12 @@ export const AuthService = {
 
     const password_hash = await hashPassword(data.password);
     const uuid = uuidv4();
-    const role: UserRole = data.role && ['customer', 'business_owner', 'rider'].includes(data.role) ? data.role : 'customer';
+    // Public /auth/register can only self-sign-up as customer/business_owner/rider.
+    // A super_admin onboarding an account from the admin panel may set any role (staff, super_admin included).
+    const allowedRoles: UserRole[] = options?.allowAnyRole
+      ? ['customer', 'business_owner', 'staff', 'rider', 'super_admin']
+      : ['customer', 'business_owner', 'rider'];
+    const role: UserRole = data.role && allowedRoles.includes(data.role) ? data.role : 'customer';
 
     const userId = await UserModel.create({
       uuid, full_name: data.full_name, email: data.email, phone: data.phone, password_hash, role,

@@ -32,6 +32,7 @@ interface UsersState {
   page: UsersPage | null
   loading: boolean
   updatingId: number | null
+  creating: boolean
   error: string | null
   notice: string | null
 }
@@ -40,6 +41,7 @@ const initialState: UsersState = {
   page: null,
   loading: false,
   updatingId: null,
+  creating: false,
   error: null,
   notice: null,
 }
@@ -52,6 +54,27 @@ export const fetchUsers = createAsyncThunk(
       return await apiClient.get<UsersPage>(`/users/admin/all${qs({ ...params })}`)
     } catch (e: unknown) {
       return rejectWithValue(e instanceof Error ? e.message : 'Failed to load users')
+    }
+  }
+)
+
+/** super_admin: onboard any account (customer, business_owner, staff, rider, super_admin) from the panel. */
+export const createUser = createAsyncThunk(
+  'users/create',
+  async (
+    payload: {
+      full_name: string
+      email?: string
+      phone?: string
+      password: string
+      role: string
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await apiClient.post<PlatformUser>('/users/admin', payload)
+    } catch (e: unknown) {
+      return rejectWithValue(e instanceof Error ? e.message : 'Failed to create user')
     }
   }
 )
@@ -105,6 +128,18 @@ const usersSlice = createSlice({
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false
         state.error = (action.payload as string) || 'Error'
+      })
+      .addCase(createUser.pending, (state) => {
+        state.creating = true
+        state.error = null
+      })
+      .addCase(createUser.fulfilled, (state) => {
+        state.creating = false
+        state.notice = 'User created'
+      })
+      .addCase(createUser.rejected, (state, action) => {
+        state.creating = false
+        state.error = (action.payload as string) || 'Failed to create user'
       })
       .addCase(setUserStatus.pending, (state, action) => {
         state.updatingId = action.meta.arg.id

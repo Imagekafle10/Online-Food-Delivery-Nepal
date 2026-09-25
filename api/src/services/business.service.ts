@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { BusinessModel } from "../models/business.model";
 import { AppError } from "../utils/AppError";
+import { AuthService } from "./auth.service";
 import { BusinessType, UserRole } from "../types";
 
 function slugify(name: string) {
@@ -73,6 +74,66 @@ export const BusinessService = {
       has_room_booking,
     });
 
+    return BusinessModel.findById(businessId);
+  },
+
+  /**
+   * super_admin: onboard a restaurant/hotel/cafe straight from the panel, creating a
+   * brand-new business_owner account for it at the same time. Goes live immediately
+   * (skips the "pending" review a self-registered owner would sit in).
+   */
+  async adminCreate(data: {
+    name: string;
+    type: BusinessType;
+    description?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    city?: string;
+    owner_full_name: string;
+    owner_email?: string;
+    owner_phone?: string;
+    owner_password: string;
+  }) {
+    if (!data.name || !data.type) throw new AppError("Restaurant name and type are required", 422);
+    if (!data.owner_full_name || !data.owner_password) {
+      throw new AppError("Owner name and password are required", 422);
+    }
+    if (!data.owner_email && !data.owner_phone) {
+      throw new AppError("Owner email or phone is required", 422);
+    }
+
+    const { user: owner } = await AuthService.register(
+      {
+        full_name: data.owner_full_name,
+        email: data.owner_email,
+        phone: data.owner_phone,
+        password: data.owner_password,
+        role: "business_owner",
+      },
+      { allowAnyRole: true }
+    );
+
+    const has_room_booking = data.type === "hotel" || data.type === "guest_house";
+    const has_table_booking = data.type !== "guest_house";
+
+    const businessId = await BusinessModel.create({
+      uuid: uuidv4(),
+      owner_id: owner.id,
+      name: data.name,
+      slug: slugify(data.name),
+      type: data.type,
+      description: data.description,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      city: data.city,
+      has_food_ordering: true,
+      has_table_booking,
+      has_room_booking,
+    });
+
+    await BusinessModel.updateStatus(businessId, "approved");
     return BusinessModel.findById(businessId);
   },
 

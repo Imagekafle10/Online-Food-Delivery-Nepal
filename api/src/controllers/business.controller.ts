@@ -9,6 +9,12 @@ export const BusinessController = {
     created(res, business, 'Business registered - pending approval');
   }),
 
+  // super_admin: onboard a restaurant/hotel/cafe + its owner account in one step.
+  adminCreate: asyncHandler(async (req: Request, res: Response) => {
+    const business = await BusinessService.adminCreate(req.body);
+    created(res, business, 'Restaurant created');
+  }),
+
   list: asyncHandler(async (req: Request, res: Response) => {
     const { type, city, search, limit, offset } = req.query;
     const businesses = await BusinessService.list({

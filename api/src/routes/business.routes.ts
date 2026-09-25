@@ -7,6 +7,7 @@ const router = Router();
 
 router.get('/', BusinessController.list);
 router.get('/admin/all', authenticate, requireRole('super_admin'), BusinessController.adminList);
+router.post('/admin', authenticate, requireRole('super_admin'), BusinessController.adminCreate);
 router.get('/:id', BusinessController.getOne);
 router.post('/', authenticate, requireRole('business_owner', 'super_admin'), BusinessController.register);
 router.patch('/:id', authenticate, BusinessController.update);

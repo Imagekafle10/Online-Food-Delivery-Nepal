@@ -39,6 +39,25 @@ OrderStatus orderStatusFromString(String s) {
   }
 }
 
+/// Inverse of [orderStatusFromString] — the canonical backend string for a
+/// status, used when caching orders locally (e.g. rider delivery history).
+String orderStatusToApiString(OrderStatus s) {
+  switch (s) {
+    case OrderStatus.placed:
+      return 'placed';
+    case OrderStatus.accepted:
+      return 'accepted';
+    case OrderStatus.cooking:
+      return 'cooking';
+    case OrderStatus.onTheWay:
+      return 'on_the_way';
+    case OrderStatus.delivered:
+      return 'delivered';
+    case OrderStatus.cancelled:
+      return 'cancelled';
+  }
+}
+
 String orderStatusLabel(OrderStatus s) {
   switch (s) {
     case OrderStatus.placed:
@@ -124,6 +143,11 @@ class FoodOrder {
   final String paymentStatus;
   final DateTime? placedAt;
   final List<OrderItemLine> items;
+  final int? riderId;
+  final String? riderName;
+  final String? riderPhone;
+  final double? deliveryLat;
+  final double? deliveryLng;
 
   FoodOrder({
     required this.id,
@@ -141,10 +165,22 @@ class FoodOrder {
     required this.paymentStatus,
     this.placedAt,
     this.items = const [],
+    this.riderId,
+    this.riderName,
+    this.riderPhone,
+    this.deliveryLat,
+    this.deliveryLng,
   });
+
+  /// A rider is only worth showing/tracking once one has actually been
+  /// assigned — matches the window `RiderProvider.isActive` covers on the
+  /// rider side (accepted / cooking / on_the_way).
+  bool get hasRiderAssigned =>
+      riderId != null && [OrderStatus.accepted, OrderStatus.cooking, OrderStatus.onTheWay].contains(status);
 
   factory FoodOrder.fromJson(Map<String, dynamic> json) {
     final itemsJson = (json['items'] as List<dynamic>?) ?? [];
+    final riderJson = json['rider'] is Map ? Map<String, dynamic>.from(json['rider'] as Map) : null;
     return FoodOrder(
       id: json['id'] as int,
       uuid: json['uuid']?.toString() ?? '',
@@ -163,6 +199,15 @@ class FoodOrder {
       items: itemsJson
           .map((i) => OrderItemLine.fromJson(i as Map<String, dynamic>))
           .toList(),
+      // Backend may return these flat on the order row (rider_id, rider_name,
+      // rider_phone) or nested under a `rider` object depending on the join —
+      // this covers either shape without needing a schema change on the app
+      // side. If your backend uses different key names, adjust just here.
+      riderId: (json['rider_id'] as num?)?.toInt() ?? (riderJson?['id'] as num?)?.toInt(),
+      riderName: json['rider_name']?.toString() ?? riderJson?['full_name']?.toString() ?? riderJson?['name']?.toString(),
+      riderPhone: json['rider_phone']?.toString() ?? riderJson?['phone']?.toString(),
+      deliveryLat: _asDouble(json['delivery_latitude']),
+      deliveryLng: _asDouble(json['delivery_longitude']),
     );
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Ban, CheckCircle2, Trash2 } from 'lucide-react'
+import { Search, Ban, CheckCircle2, Trash2, Plus } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '../hooks/redux'
 import {
   fetchUsers,
@@ -9,6 +9,7 @@ import {
   PlatformUser,
 } from '../features/users/usersSlice'
 import Pagination from '../components/ui/Pagination'
+import AddUserModal from '../components/ui/AddUserModal'
 
 const PAGE_SIZE = 20
 
@@ -33,6 +34,7 @@ export default function UsersPage() {
   const [status, setStatus] = useState('suspended')
   const [role, setRole] = useState('')
   const [offset, setOffset] = useState(0)
+  const [showAddUser, setShowAddUser] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -90,10 +92,17 @@ export default function UsersPage() {
             · track suspended accounts, suspend or reactivate users
           </p>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={load}>
-          Refresh
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowAddUser(true)}>
+            <Plus size={14} /> Add user
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={load}>
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {showAddUser && <AddUserModal onClose={() => setShowAddUser(false)} />}
 
       {error && <div className="alert alert-error">{error}</div>}
       {notice && <div className="alert alert-info">{notice}</div>}

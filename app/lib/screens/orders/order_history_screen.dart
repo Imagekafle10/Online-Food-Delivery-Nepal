@@ -3,6 +3,7 @@ import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../theme/app_theme.dart';
 import 'order_tracking_screen.dart';
+import 'rider_tracking_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -44,16 +45,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         color: AppColors.gold,
         backgroundColor: AppColors.surface,
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.gold))
             : _orders.isEmpty
                 ? ListView(
                     children: const [
                       SizedBox(height: 120),
-                      Icon(Icons.receipt_long_outlined, size: 56, color: AppColors.textMuted),
+                      Icon(Icons.receipt_long_outlined,
+                          size: 56, color: AppColors.textMuted),
                       SizedBox(height: 16),
-                      Center(child: Text('No orders yet', style: TextStyle(fontWeight: FontWeight.w700))),
+                      Center(
+                          child: Text('No orders yet',
+                              style: TextStyle(fontWeight: FontWeight.w700))),
                       SizedBox(height: 6),
-                      Center(child: Text('Your food orders will show up here.', style: TextStyle(color: AppColors.textMuted))),
+                      Center(
+                          child: Text('Your food orders will show up here.',
+                              style: TextStyle(color: AppColors.textMuted))),
                     ],
                   )
                 : ListView.separated(
@@ -67,22 +74,41 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         OrderStatus.cancelled,
                       ].contains(o.status);
                       return Card(
-                        child: ListTile(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: o.id)),
-                          ),
-                          contentPadding: const EdgeInsets.all(14),
-                          leading: CircleAvatar(
-                            backgroundColor: isActive ? AppColors.gold : AppColors.surfaceAlt,
-                            child: Icon(Icons.receipt_long, color: isActive ? AppColors.black : AppColors.gold, size: 20),
-                          ),
-                          title: Text('Order #${o.orderNumber}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text('Rs. ${o.totalAmount.toStringAsFixed(0)} • ${orderStatusLabel(o.status)}',
-                                style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5)),
-                          ),
-                          trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        OrderTrackingScreen(orderId: o.id)),
+                              ),
+                              contentPadding:
+                                  const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                              leading: CircleAvatar(
+                                backgroundColor: isActive
+                                    ? AppColors.gold
+                                    : AppColors.surfaceAlt,
+                                child: Icon(Icons.receipt_long,
+                                    color: isActive
+                                        ? AppColors.black
+                                        : AppColors.gold,
+                                    size: 20),
+                              ),
+                              title: Text('Order #${o.orderNumber}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700)),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                    'Rs. ${o.totalAmount.toStringAsFixed(0)} • ${orderStatusLabel(o.status)}',
+                                    style: const TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 12.5)),
+                              ),
+                              trailing: const Icon(Icons.chevron_right,
+                                  color: AppColors.textMuted),
+                            ),
+                          ],
                         ),
                       );
                     },

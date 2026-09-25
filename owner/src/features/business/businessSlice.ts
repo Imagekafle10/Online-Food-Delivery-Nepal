@@ -68,6 +68,7 @@ interface BusinessState {
   adminPage: AdminBusinessPage | null
   adminLoading: boolean
   statusUpdatingId: number | null
+  creating: boolean
 }
 
 // The selected business is NOT remembered between visits (old saved selections are dropped).
@@ -83,6 +84,7 @@ const initialState: BusinessState = {
   adminPage: null,
   adminLoading: false,
   statusUpdatingId: null,
+  creating: false,
 }
 
 /**
@@ -118,6 +120,33 @@ export const fetchAdminBusinesses = createAsyncThunk(
       return await searchAdminBusinesses(params)
     } catch (e: unknown) {
       return rejectWithValue(e instanceof Error ? e.message : 'Failed to search businesses')
+    }
+  }
+)
+
+/** super_admin: onboard a restaurant/hotel/cafe + its owner account in one step. Goes live immediately. */
+export const createBusiness = createAsyncThunk(
+  'business/create',
+  async (
+    payload: {
+      name: string
+      type: string
+      description?: string
+      phone?: string
+      email?: string
+      address?: string
+      city?: string
+      owner_full_name: string
+      owner_email?: string
+      owner_phone?: string
+      owner_password: string
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await apiClient.post<Business>('/businesses/admin', payload)
+    } catch (e: unknown) {
+      return rejectWithValue(e instanceof Error ? e.message : 'Failed to create restaurant')
     }
   }
 )
@@ -213,6 +242,21 @@ const businessSlice = createSlice({
       .addCase(fetchAdminBusinesses.rejected, (state, action) => {
         state.adminLoading = false
         state.error = (action.payload as string) || 'Error'
+      })
+      .addCase(createBusiness.pending, (state) => {
+        state.creating = true
+        state.error = null
+      })
+      .addCase(createBusiness.fulfilled, (state, action) => {
+        state.creating = false
+        if (state.adminPage) {
+          state.adminPage.businesses = [action.payload, ...state.adminPage.businesses]
+          state.adminPage.total += 1
+        }
+      })
+      .addCase(createBusiness.rejected, (state, action) => {
+        state.creating = false
+        state.error = (action.payload as string) || 'Failed to create restaurant'
       })
       .addCase(setBusinessStatus.pending, (state, action) => {
         state.statusUpdatingId = action.meta.arg.id

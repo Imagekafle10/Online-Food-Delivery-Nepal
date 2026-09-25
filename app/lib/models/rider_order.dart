@@ -163,6 +163,28 @@ class RiderOrder {
             .map((e) => OrderItemLine.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
       );
+
+  /// Round-trips through [fromJson] using the same backend-shaped keys, so
+  /// this doubles as the format used to cache delivered orders on-device
+  /// for the rider's "History" tab (see RiderProvider).
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'order_number': orderNumber,
+        'business_id': businessId,
+        'status': orderStatusToApiString(status),
+        'subtotal': subtotal,
+        'delivery_fee': deliveryFee,
+        'total_amount': totalAmount,
+        'payment_method': paymentMethod,
+        'payment_status': paymentStatus,
+        'delivery_latitude': dropLat,
+        'delivery_longitude': dropLng,
+        'delivery_instructions': deliveryInstructions,
+        'special_instructions': specialInstructions,
+        'customer_name': customerName,
+        'customer_phone': customerPhone,
+        'delivery_address': dropAddress,
+      };
 }
 
 String riderStatusLabel(OrderStatus s) {
