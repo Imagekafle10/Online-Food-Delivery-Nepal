@@ -1,30 +1,30 @@
-import { useState, FormEvent, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '../hooks/redux'
-import { login, clearError } from '../features/auth/authSlice'
-import { fetchBusinesses } from '../features/business/businessSlice'
-import './login.css'
+import { useState, FormEvent, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../hooks/redux";
+import { login, clearError } from "../features/auth/authSlice";
+import { fetchBusinesses } from "../features/business/businessSlice";
+import "./login.css";
 
 export default function LoginPage() {
-  const [identifier, setIdentifier] = useState('owner@foodie.test')
-  const [password, setPassword] = useState('password123')
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const { loading, error, isAuthenticated } = useAppSelector((s) => s.auth)
+  const [identifier, setIdentifier] = useState("owner@foodie.test");
+  const [password, setPassword] = useState("password123");
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { loading, error, isAuthenticated } = useAppSelector((s) => s.auth);
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/', { replace: true })
-  }, [isAuthenticated, navigate])
+    if (isAuthenticated) navigate("/", { replace: true });
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    dispatch(clearError())
-    const result = await dispatch(login({ identifier, password }))
+    e.preventDefault();
+    dispatch(clearError());
+    const result = await dispatch(login({ identifier, password }));
     if (login.fulfilled.match(result)) {
-      await dispatch(fetchBusinesses())
-      navigate('/')
+      await dispatch(fetchBusinesses());
+      navigate("/");
     }
-  }
+  };
 
   return (
     <div className="login-page">
@@ -43,8 +43,8 @@ export default function LoginPage() {
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="owner@foodie.test"
-              autoComplete="username"
+              placeholder="username"
+              // autoComplete="username"
             />
           </div>
           <div className="form-group">
@@ -55,23 +55,19 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              autoComplete="current-password"
+              // autoComplete="current-password"
             />
           </div>
           {error && <p className="login-error">{error}</p>}
-          <button type="submit" className="btn btn-primary login-btn" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign In'}
+          <button
+            type="submit"
+            className="btn btn-primary login-btn"
+            disabled={loading}
+          >
+            {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
-
-        <p className="login-hint">
-          Seed accounts (after loading seed_dummy_data.sql):
-          <br />
-          <strong>owner@foodie.test</strong> / password123 (business owner)
-          <br />
-          <strong>customer@foodie.test</strong> / password123
-        </p>
       </div>
     </div>
-  )
+  );
 }
