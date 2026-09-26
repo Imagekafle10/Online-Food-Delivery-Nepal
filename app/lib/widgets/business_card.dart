@@ -2,12 +2,36 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/business.dart';
 import '../theme/app_theme.dart';
+import '../utils/distance_util.dart';
 
 class BusinessCard extends StatelessWidget {
   final Business business;
   final VoidCallback onTap;
 
-  const BusinessCard({super.key, required this.business, required this.onTap});
+  /// The user's current GPS position, if known. When present (and the
+  /// business has lat/lng), the delivery fee shown is calculated by distance
+  /// from here using the same tiers as CartProvider.deliveryFee, instead of
+  /// falling back to the business's flat base_delivery_fee.
+  final double? userLat;
+  final double? userLng;
+
+  const BusinessCard({
+    super.key,
+    required this.business,
+    required this.onTap,
+    this.userLat,
+    this.userLng,
+  });
+
+  /// Rs. amount to show on the card: distance-based from the user's current
+  /// location when we have both points, otherwise the business's flat fee.
+  double get _displayFee {
+    if (userLat == null || userLng == null || business.latitude == null || business.longitude == null) {
+      return business.baseDeliveryFee;
+    }
+    final km = distanceKm(userLat!, userLng!, business.latitude!, business.longitude!);
+    return deliveryFeeForDistance(km);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +105,7 @@ class BusinessCard extends StatelessWidget {
                       const SizedBox(width: 14),
                       const Icon(Icons.delivery_dining, size: 15, color: AppColors.gold),
                       const SizedBox(width: 4),
-                      Text('Rs. ${business.baseDeliveryFee.toStringAsFixed(0)} delivery',
+                      Text('Rs. ${_displayFee.toStringAsFixed(0)} delivery',
                           style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
                     ],
                   ),

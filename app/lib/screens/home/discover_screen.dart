@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/business.dart';
 import '../../services/api_client.dart';
 import '../../services/business_service.dart';
+import '../../services/location_helper.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/business_card.dart';
 import '../business/business_detail_screen.dart';
@@ -25,10 +26,30 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   String? _error;
   String? _typeFilter; // restaurant | cafe | hotel | guest_house | null (all)
 
+  // Current GPS fix, used to show each card's real distance-based delivery
+  // fee instead of the business's flat base fee. Best-effort: if location is
+  // denied/unavailable we just fall back to the flat fee, we don't block the
+  // feed on it.
+  double? _userLat;
+  double? _userLng;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _loadLocation();
+  }
+
+  Future<void> _loadLocation() async {
+    try {
+      final pos = await LocationHelper.current();
+      if (mounted) setState(() {
+        _userLat = pos.latitude;
+        _userLng = pos.longitude;
+      });
+    } catch (_) {
+      // Silently keep showing flat fees if location isn't available.
+    }
   }
 
   Future<void> _load() async {
@@ -140,6 +161,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     final b = _all[i];
                     return BusinessCard(
                       business: b,
+                      userLat: _userLat,
+                      userLng: _userLng,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => BusinessDetailScreen(businessId: b.id)),
                       ),

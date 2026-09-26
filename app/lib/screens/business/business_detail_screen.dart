@@ -6,7 +6,9 @@ import '../../models/menu_item.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/api_client.dart';
 import '../../services/business_service.dart';
+import '../../services/location_helper.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/distance_util.dart';
 import '../../widgets/menu_item_tile.dart';
 import '../cart/cart_screen.dart';
 
@@ -26,10 +28,39 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen> {
   bool _loading = true;
   String? _error;
 
+  // Current GPS fix, used to quote the real distance-based delivery fee here
+  // (same tiers as CartProvider.deliveryFee). Best-effort - if unavailable we
+  // fall back to the business's flat base fee, same as the checkout flow does.
+  double? _userLat;
+  double? _userLng;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _loadLocation();
+  }
+
+  Future<void> _loadLocation() async {
+    try {
+      final pos = await LocationHelper.current();
+      if (mounted) setState(() {
+        _userLat = pos.latitude;
+        _userLng = pos.longitude;
+      });
+    } catch (_) {
+      // Silently keep showing the flat fee if location isn't available.
+    }
+  }
+
+  /// Rs. amount for the info chip: distance-based from the user's current
+  /// location when we have both points, otherwise the business's flat fee.
+  double _deliveryFeeFor(Business b) {
+    if (_userLat == null || _userLng == null || b.latitude == null || b.longitude == null) {
+      return b.baseDeliveryFee;
+    }
+    final km = distanceKm(_userLat!, _userLng!, b.latitude!, b.longitude!);
+    return deliveryFeeForDistance(km);
   }
 
   Future<void> _load() async {
@@ -154,7 +185,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen> {
                     runSpacing: 8,
                     children: [
                       _infoChip(Icons.timer_outlined, '${b.avgPrepTimeMins} min'),
-                      _infoChip(Icons.delivery_dining, 'Rs. ${b.baseDeliveryFee.toStringAsFixed(0)} delivery'),
+                      _infoChip(Icons.delivery_dining, 'Rs. ${_deliveryFeeFor(b).toStringAsFixed(0)} delivery'),
                       if (b.minOrderAmount > 0) _infoChip(Icons.shopping_bag_outlined, 'Min Rs. ${b.minOrderAmount.toStringAsFixed(0)}'),
                       _infoChip(b.isOpen ? Icons.check_circle : Icons.cancel, b.isOpen ? 'Open now' : 'Closed'),
                     ],
