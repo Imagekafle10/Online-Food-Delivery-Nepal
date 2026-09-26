@@ -53,6 +53,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             orElse: () => list.isNotEmpty ? list.first : list.first);
         _loadingAddresses = false;
       });
+      if (mounted) context.read<CartProvider>().setDeliveryAddress(_selected);
     } catch (_) {
       setState(() {
         _addresses = [];
@@ -158,7 +159,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ..._addresses.map((a) => _AddressTile(
                   address: a,
                   selected: _selected?.id == a.id,
-                  onTap: () => setState(() => _selected = a),
+                  onTap: () {
+                    setState(() => _selected = a);
+                    context.read<CartProvider>().setDeliveryAddress(a);
+                  },
                 )),
             const SizedBox(height: 8),
             OutlinedButton.icon(
@@ -212,7 +216,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 children: [
                   _summaryRow('Subtotal', cart.subtotal),
-                  _summaryRow('Delivery fee', cart.deliveryFee),
+                  _summaryRow(
+                    cart.deliveryDistanceKm != null
+                        ? 'Delivery fee (${cart.deliveryDistanceKm!.toStringAsFixed(1)} km)'
+                        : 'Delivery fee',
+                    cart.deliveryFee,
+                  ),
                   _summaryRow('Tax (13%)', cart.tax),
                   const Divider(height: 20),
                   _summaryRow('Total', cart.total, bold: true),

@@ -9,6 +9,7 @@ import { OrderStatus, PaymentMethod } from '../types';
 import { emitToBusiness, emitToOrder } from '../utils/socket';
 import { DeliveryService } from './delivery.service';
 import { RiderModel } from '../models/rider.model';
+import { distanceKm, deliveryFeeForDistance } from '../utils/distance.util';
 
 const TAX_RATE = 0.13; // Nepal VAT 13% - adjust per business/locale as needed
 
@@ -86,7 +87,21 @@ export const OrderService = {
       if (!data.delivery_address_id) throw new AppError('Delivery address is required', 422);
       deliveryAddress = await AddressModel.findById(data.delivery_address_id);
       if (!deliveryAddress || deliveryAddress.user_id !== userId) throw new AppError('Invalid delivery address', 422);
-      deliveryFee = Number(business.base_delivery_fee || 0);
+
+      // Same km-tier pricing as the Flutter app's deliveryFeeForDistance, so the
+      // preview shown in cart/checkout always matches what actually gets charged.
+      // Falls back to the business's flat base_delivery_fee if either point's
+      // lat/lng is missing (matches CartProvider.deliveryFee's fallback too).
+      if (business.latitude != null && business.longitude != null &&
+          deliveryAddress.latitude != null && deliveryAddress.longitude != null) {
+        const km = distanceKm(
+          Number(business.latitude), Number(business.longitude),
+          Number(deliveryAddress.latitude), Number(deliveryAddress.longitude),
+        );
+        deliveryFee = deliveryFeeForDistance(km);
+      } else {
+        deliveryFee = Number(business.base_delivery_fee || 0);
+      }
     }
 
     if (data.order_type === 'dine_in' && !data.table_id) {
