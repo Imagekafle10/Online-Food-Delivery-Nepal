@@ -10,6 +10,7 @@ import '../../services/location_helper.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/distance_util.dart';
 import '../../widgets/menu_item_tile.dart';
+import '../../widgets/rating_widgets.dart';
 import '../cart/cart_screen.dart';
 
 class BusinessDetailScreen extends StatefulWidget {
@@ -184,6 +185,13 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen> {
                     spacing: 10,
                     runSpacing: 8,
                     children: [
+                      GestureDetector(
+                        onTap: () => showReviewsSheet(context, b.id, b.name),
+                        child: _infoChip(
+                          Icons.star_rounded,
+                          b.ratingCount == 0 ? 'No ratings yet' : '${b.avgRating.toStringAsFixed(1)} (${b.ratingCount}) • Reviews',
+                        ),
+                      ),
                       _infoChip(Icons.timer_outlined, '${b.avgPrepTimeMins} min'),
                       _infoChip(Icons.delivery_dining, 'Rs. ${_deliveryFeeFor(b).toStringAsFixed(0)} delivery'),
                       if (b.minOrderAmount > 0) _infoChip(Icons.shopping_bag_outlined, 'Min Rs. ${b.minOrderAmount.toStringAsFixed(0)}'),

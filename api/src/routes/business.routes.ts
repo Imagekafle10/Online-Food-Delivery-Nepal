@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { BusinessController } from '../controllers/business.controller';
-import { authenticate } from '../middlewares/auth.middleware';
+import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
 import { requireRole } from '../middlewares/role.middleware';
 import { uploadSingleImage } from '../middlewares/upload.middleware';
 
 const router = Router();
 
 router.get('/', BusinessController.list);
+router.get('/recommended', optionalAuth, BusinessController.recommended);
 router.get('/admin/all', authenticate, requireRole('super_admin'), BusinessController.adminList);
 router.post('/admin', authenticate, requireRole('super_admin'), uploadSingleImage, BusinessController.adminCreate);
 router.get('/:id', BusinessController.getOne);

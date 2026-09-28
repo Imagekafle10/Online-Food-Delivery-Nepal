@@ -18,6 +18,8 @@ class Business {
   final String status;
   final double? latitude;
   final double? longitude;
+  final double avgRating; // 0 when unrated
+  final int ratingCount;
 
   Business({
     required this.id,
@@ -39,6 +41,8 @@ class Business {
     required this.status,
     this.latitude,
     this.longitude,
+    this.avgRating = 0,
+    this.ratingCount = 0,
   });
 
   factory Business.fromJson(Map<String, dynamic> json) => Business(
@@ -61,6 +65,8 @@ class Business {
         status: json['status']?.toString() ?? 'approved',
         latitude: _asDouble(json['latitude']),
         longitude: _asDouble(json['longitude']),
+        avgRating: _asDouble(json['avg_rating']) ?? 0,
+        ratingCount: (json['rating_count'] as num?)?.toInt() ?? int.tryParse('${json['rating_count'] ?? 0}') ?? 0,
       );
 }
 

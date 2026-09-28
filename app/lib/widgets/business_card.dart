@@ -23,14 +23,33 @@ class BusinessCard extends StatelessWidget {
     this.userLng,
   });
 
+  /// Straight-line distance in km from the user to the business, or null if
+  /// either location is unknown.
+  double? get _distanceKm {
+    if (userLat == null ||
+        userLng == null ||
+        business.latitude == null ||
+        business.longitude == null) {
+      return null;
+    }
+    return distanceKm(
+        userLat!, userLng!, business.latitude!, business.longitude!);
+  }
+
   /// Rs. amount to show on the card: distance-based from the user's current
   /// location when we have both points, otherwise the business's flat fee.
   double get _displayFee {
-    if (userLat == null || userLng == null || business.latitude == null || business.longitude == null) {
-      return business.baseDeliveryFee;
-    }
-    final km = distanceKm(userLat!, userLng!, business.latitude!, business.longitude!);
+    final km = _distanceKm;
+    if (km == null) return business.baseDeliveryFee;
     return deliveryFeeForDistance(km);
+  }
+
+  /// "450 m away" / "2.3 km away", or null when the distance is unknown.
+  String? get _distanceLabel {
+    final km = _distanceKm;
+    if (km == null) return null;
+    if (km < 1) return '${(km * 1000).round()} m away';
+    return '${km.toStringAsFixed(1)} km away';
   }
 
   @override
@@ -61,7 +80,10 @@ class BusinessCard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Text(
                         'CLOSED',
-                        style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.w800, letterSpacing: 2),
+                        style: TextStyle(
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2),
                       ),
                     ),
                   ),
@@ -78,17 +100,24 @@ class BusinessCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(business.name,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
+                      const Icon(Icons.location_on_outlined,
+                          size: 14, color: AppColors.textMuted),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          business.city ?? business.address ?? '',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
+                          [
+                            business.city ?? business.address ?? '',
+                            if (_distanceLabel != null) _distanceLabel!,
+                          ].where((s) => s.isNotEmpty).join(' • '),
+                          style: const TextStyle(
+                              color: AppColors.textMuted, fontSize: 12.5),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -98,15 +127,16 @@ class BusinessCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.timer_outlined, size: 14, color: AppColors.gold),
-                      const SizedBox(width: 4),
-                      Text('${business.avgPrepTimeMins} min prep',
-                          style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
-                      const SizedBox(width: 14),
-                      const Icon(Icons.delivery_dining, size: 15, color: AppColors.gold),
+                      const Icon(Icons.delivery_dining,
+                          size: 15, color: AppColors.gold),
                       const SizedBox(width: 4),
                       Text('Rs. ${_displayFee.toStringAsFixed(0)} delivery',
-                          style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
+                          style: const TextStyle(
+                              fontSize: 12.5, color: AppColors.textMuted)),
+                      const SizedBox(width: 12),
+                      RatingPill(
+                          rating: business.avgRating,
+                          count: business.ratingCount),
                     ],
                   ),
                 ],
@@ -140,8 +170,41 @@ class _TypeBadge extends StatelessWidget {
       ),
       child: Text(
         type.replaceAll('_', ' ').toUpperCase(),
-        style: const TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+        style: const TextStyle(
+            color: AppColors.gold,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5),
       ),
+    );
+  }
+}
+
+/// Small "★ 4.5 (12)" pill. Shows "New" for restaurants with no ratings yet.
+class RatingPill extends StatelessWidget {
+  final double rating;
+  final int count;
+  const RatingPill({super.key, required this.rating, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.black.withOpacity(0.75),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.star_rounded, size: 15, color: AppColors.gold),
+        const SizedBox(width: 3),
+        Text(
+          count == 0 ? 'New' : '${rating.toStringAsFixed(1)} ($count)',
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary),
+        ),
+      ]),
     );
   }
 }

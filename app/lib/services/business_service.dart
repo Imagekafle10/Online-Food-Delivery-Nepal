@@ -16,6 +16,17 @@ class BusinessService {
     return (data as List).map((e) => Business.fromJson(e)).toList();
   }
 
+  /// GET /api/businesses/recommended — ranked by collaborative filtering
+  /// (Jaccard similarity between users' ordered-restaurant sets).
+  Future<List<Business>> recommended({String? type, String? city, String? search}) async {
+    final data = await _api.get(ApiConfig.businessesRecommended, query: {
+      if (type != null) 'type': type,
+      if (city != null) 'city': city,
+      if (search != null && search.isNotEmpty) 'search': search,
+    });
+    return (data as List).map((e) => Business.fromJson(e)).toList();
+  }
+
   Future<Business> getOne(int id) async {
     final data = await _api.get(ApiConfig.business(id));
     return Business.fromJson(data);

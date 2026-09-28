@@ -80,7 +80,7 @@ export const BusinessModel = {
 
   async findById(id: number) {
     const [rows] = await pool.query<Business[]>(
-      "SELECT * FROM businesses WHERE id = ?",
+      "SELECT businesses.*, (SELECT ROUND(AVG(r.rating),1) FROM reviews r WHERE r.business_id = businesses.id) AS avg_rating, (SELECT COUNT(*) FROM reviews r WHERE r.business_id = businesses.id) AS rating_count FROM businesses WHERE id = ?",
       [id],
     );
     return rows[0] || null;
@@ -141,7 +141,7 @@ export const BusinessModel = {
     const limit = filters.limit ?? 20;
     const offset = filters.offset ?? 0;
     const [rows] = await pool.query<Business[]>(
-      `SELECT * FROM businesses ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT businesses.*, (SELECT ROUND(AVG(r.rating),1) FROM reviews r WHERE r.business_id = businesses.id) AS avg_rating, (SELECT COUNT(*) FROM reviews r WHERE r.business_id = businesses.id) AS rating_count FROM businesses ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset],
     );
     return rows;

@@ -25,8 +25,14 @@ class ApiConfig {
   static const String refresh = '/auth/refresh';
   static const String me = '/auth/me';
 
+  // --- Reviews ---
+  static const String reviews = '/reviews';
+  static String businessReviews(int id) => '/reviews/business/$id';
+  static String orderReview(int id) => '/reviews/order/$id';
+
   // --- Businesses ---
   static const String businesses = '/businesses';
+  static const String businessesRecommended = '/businesses/recommended';
   static String business(int id) => '/businesses/$id';
 
   // --- Menu ---
