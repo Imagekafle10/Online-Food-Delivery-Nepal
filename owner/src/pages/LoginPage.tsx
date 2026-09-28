@@ -6,8 +6,8 @@ import { fetchBusinesses } from "../features/business/businessSlice";
 import "./login.css";
 
 export default function LoginPage() {
-  const [identifier, setIdentifier] = useState("owner@foodie.test");
-  const [password, setPassword] = useState("password123");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();

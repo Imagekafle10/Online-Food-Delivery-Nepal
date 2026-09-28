@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/AppError';
 import { ok, created } from '../utils/response.util';
 import { BusinessService } from '../services/business.service';
+import { RecommendationService } from '../services/recommendation.service';
 
 // The admin-create form may arrive as JSON or as multipart (when a logo image is attached).
 // Multipart sends every field as a string, so convert lat/lng back to numbers and attach
@@ -26,6 +27,15 @@ export const BusinessController = {
   adminCreate: asyncHandler(async (req: Request, res: Response) => {
     const business = await BusinessService.adminCreate(parseAdminCreateBody(req) as any);
     created(res, business, 'Restaurant created');
+  }),
+
+  // Personalised ranking (user-based CF w/ Jaccard). Works for guests too (popularity).
+  recommended: asyncHandler(async (req: Request, res: Response) => {
+    const { type, city, search } = req.query;
+    const data = await RecommendationService.recommend(req.user?.id, {
+      type: type as any, city: city as any, search: search as any,
+    });
+    ok(res, data);
   }),
 
   list: asyncHandler(async (req: Request, res: Response) => {

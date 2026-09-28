@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/rating_widgets.dart';
 import 'order_tracking_screen.dart';
 import 'rider_tracking_screen.dart';
 
@@ -108,6 +109,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                               trailing: const Icon(Icons.chevron_right,
                                   color: AppColors.textMuted),
                             ),
+                            if (o.status == OrderStatus.delivered)
+                              RateOrderButton(orderId: o.id),
                           ],
                         ),
                       );

@@ -10,6 +10,7 @@ import roomRoutes from './room.routes';
 import paymentRoutes from './payment.routes';
 import addressRoutes from './address.routes';
 import userRoutes from './user.routes';
+import reviewRoutes from './review.routes';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.use('/rooms', roomRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/addresses', addressRoutes);
 router.use('/users', userRoutes);
+router.use('/reviews', reviewRoutes);
 
 router.get('/health', (_req, res) => res.json({ success: true, message: 'API is healthy' }));
 

@@ -3,7 +3,9 @@ import '../../models/business.dart';
 import '../../services/api_client.dart';
 import '../../services/business_service.dart';
 import '../../services/location_helper.dart';
+import '../../services/city_store.dart';
 import '../../theme/app_theme.dart';
+import '../location/select_city_screen.dart';
 import '../../widgets/business_card.dart';
 import '../business/business_detail_screen.dart';
 
@@ -24,6 +26,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   List<Business> _all = [];
   bool _loading = true;
   String? _error;
+  String? _city;
   String? _typeFilter; // restaurant | cafe | hotel | guest_house | null (all)
 
   // Current GPS fix, used to show each card's real distance-based delivery
@@ -36,17 +39,32 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    CityStore.get().then((c) {
+      _city = c;
+      _load();
+    });
     _loadLocation();
+  }
+
+  Future<void> _changeCity() async {
+    final c = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+          builder: (_) => const SelectCityScreen(canGoBack: true)),
+    );
+    if (c != null && c != _city) {
+      _city = c;
+      _load();
+    }
   }
 
   Future<void> _loadLocation() async {
     try {
       final pos = await LocationHelper.current();
-      if (mounted) setState(() {
-        _userLat = pos.latitude;
-        _userLng = pos.longitude;
-      });
+      if (mounted)
+        setState(() {
+          _userLat = pos.latitude;
+          _userLng = pos.longitude;
+        });
     } catch (_) {
       // Silently keep showing flat fees if location isn't available.
     }
@@ -58,9 +76,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       _error = null;
     });
     try {
-      final list = await _service.list(type: _typeFilter, search: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim());
+      final list = await _service.recommended(
+          city: _city,
+          type: _typeFilter,
+          search:
+              _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim());
       setState(() {
-        _all = list.where((b) => b.hasFoodOrdering && b.status == 'approved').toList();
+        _all = list
+            .where((b) => b.hasFoodOrdering && b.status == 'approved')
+            .toList();
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -80,9 +104,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hungry?'),
+        centerTitle: false,
+        title: const Text(
+          'Bhansa',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1,
+            color: AppColors.gold,
+          ),
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.tune), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.tune), onPressed: _changeCity),
         ],
       ),
       body: RefreshIndicator(
@@ -96,13 +129,39 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Column(
                   children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: _changeCity,
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.location_on,
+                              color: AppColors.gold, size: 15),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              _city ?? 'Select city',
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(Icons.keyboard_arrow_down,
+                              color: AppColors.gold, size: 18),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     TextField(
                       controller: _searchCtrl,
                       onSubmitted: (_) => _load(),
                       decoration: InputDecoration(
                         hintText: 'Search restaurants or cuisines',
-                        prefixIcon: const Icon(Icons.search, color: AppColors.gold),
-                        suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward, color: AppColors.gold), onPressed: _load),
+                        prefixIcon:
+                            const Icon(Icons.search, color: AppColors.gold),
+                        suffixIcon: IconButton(
+                            icon: const Icon(Icons.arrow_forward,
+                                color: AppColors.gold),
+                            onPressed: _load),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -125,7 +184,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             ),
             if (_loading)
               const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator(color: AppColors.gold)),
+                child: Center(
+                    child: CircularProgressIndicator(color: AppColors.gold)),
               )
             else if (_error != null)
               SliverFillRemaining(
@@ -135,11 +195,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.wifi_off, color: AppColors.textMuted, size: 40),
+                        const Icon(Icons.wifi_off,
+                            color: AppColors.textMuted, size: 40),
                         const SizedBox(height: 12),
-                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted)),
+                        Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.textMuted)),
                         const SizedBox(height: 12),
-                        OutlinedButton(onPressed: _load, child: const Text('Retry')),
+                        OutlinedButton(
+                            onPressed: _load, child: const Text('Retry')),
                       ],
                     ),
                   ),
@@ -148,7 +212,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             else if (_all.isEmpty)
               const SliverFillRemaining(
                 child: Center(
-                  child: Text('No restaurants found nearby yet.', style: TextStyle(color: AppColors.textMuted)),
+                  child: Text('No restaurants found in this city yet.',
+                      style: TextStyle(color: AppColors.textMuted)),
                 ),
               )
             else
@@ -164,7 +229,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       userLat: _userLat,
                       userLng: _userLng,
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => BusinessDetailScreen(businessId: b.id)),
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                BusinessDetailScreen(businessId: b.id)),
                       ),
                     );
                   },
