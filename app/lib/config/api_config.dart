@@ -25,6 +25,10 @@ class ApiConfig {
   static const String refresh = '/auth/refresh';
   static const String me = '/auth/me';
 
+  // --- Push notifications ---
+  static const String devices = '/devices';
+  static const String devicesRemove = '/devices/remove';
+
   // --- Reviews ---
   static const String reviews = '/reviews';
   static String businessReviews(int id) => '/reviews/business/$id';

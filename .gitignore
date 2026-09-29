@@ -3,12 +3,22 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-store/
+.pnpm-debug.log*
 
 # Environment
 .env
 .env.*
 !.env.example
+!.env.sample
 
+# Firebase service account
+**/service_account.json
+**/google-services.json
+**/GoogleService-Info.plist          # iOS Firebase
+firebase_options.dart                # if generated and contains secrets (optional)
+
+# Maps
 **/maps.env.json
 **/maps.env.local.json
 
@@ -16,30 +26,56 @@ yarn-error.log*
 .dart_tool/
 .packages
 .pub/
+.pub-cache/
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
+*.lock                                 # only if you don't want to commit pubspec.lock (usually you do for apps)
 
 # Android
 .gradle/
 local.properties
 *.jks
 *.keystore
+key.properties
+**/GeneratedPluginRegistrant.java
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
 
 # Vite
 .vite/
+dist/
 
 # Archives
 *.zip
+*.tar.gz
+*.rar
 
-# IDE
+# IDE / OS
 .idea/
 .vscode/
 *.iml
-
-# OS
 .DS_Store
 Thumbs.db
+*.swp
+*~
 
 # Logs
 *.log
+logs/
+
+# Coverage / test
+coverage/
+.test_coverage/
