@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart' show AuthService;
+import '../services/notification_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -32,15 +33,19 @@ class AuthProvider extends ChangeNotifier {
         }
       } catch (_) {}
     }
+    if (isAuthenticated) NotificationService.instance.registerDevice();
     _initializing = false;
     notifyListeners();
   }
 
-  Future<bool> login(String identifier, String password) =>
-      _run(() async {
-        final result = await _authService.login(identifier: identifier, password: password);
-        _user = result.user;
-      });
+  Future<bool> login(String identifier, String password) async {
+    final ok = await _run(() async {
+      final result = await _authService.login(identifier: identifier, password: password);
+      _user = result.user;
+    });
+    if (ok) NotificationService.instance.registerDevice();
+    return ok;
+  }
 
   Future<bool> register({
     required String fullName,
@@ -48,19 +53,23 @@ class AuthProvider extends ChangeNotifier {
     String? phone,
     required String password,
     String role = 'customer',
-  }) =>
-      _run(() async {
-        final result = await _authService.register(
-          fullName: fullName,
-          email: email,
-          phone: phone,
-          password: password,
-          role: role,
-        );
-        _user = result.user;
-      });
+  }) async {
+    final ok = await _run(() async {
+      final result = await _authService.register(
+        fullName: fullName,
+        email: email,
+        phone: phone,
+        password: password,
+        role: role,
+      );
+      _user = result.user;
+    });
+    if (ok) NotificationService.instance.registerDevice();
+    return ok;
+  }
 
   Future<void> logout() async {
+    await NotificationService.instance.unregisterDevice();
     await _authService.logout();
     _user = null;
     notifyListeners();

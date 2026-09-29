@@ -10,6 +10,7 @@ import { emitToBusiness, emitToOrder } from '../utils/socket';
 import { DeliveryService } from './delivery.service';
 import { RiderModel } from '../models/rider.model';
 import { distanceKm, deliveryFeeForDistance } from '../utils/distance.util';
+import { NotificationService } from './notification.service';
 
 const TAX_RATE = 0.13; // Nepal VAT 13% - adjust per business/locale as needed
 
@@ -132,6 +133,7 @@ export const OrderService = {
 
     const order = await OrderModel.findById(orderId);
     emitToBusiness(data.business_id, 'order:new', order);
+    if (order) NotificationService.newOrderForBusiness(data.business_id, order);
     return { order, items: orderItems };
   },
 
@@ -221,6 +223,7 @@ export const OrderService = {
     await OrderModel.updateStatus(orderId, nextStatus, statusNote || undefined);
     emitToOrder(orderId, 'order:status', { orderId, status: nextStatus, note: statusNote });
     emitToBusiness(order.business_id, 'order:status', { orderId, status: nextStatus });
+    NotificationService.orderStatus(order, nextStatus, statusNote);
 
     // As soon as a delivery order starts cooking, try to auto-assign the nearest rider.
     if (nextStatus === 'cooking' && order.order_type === 'delivery') {
@@ -249,5 +252,7 @@ export const OrderService = {
     if (order.rider_id) await releaseRider(order.rider_id);
     emitToOrder(orderId, 'order:status', { orderId, status: 'cancelled', note: reason });
     emitToBusiness(order.business_id, 'order:status', { orderId, status: 'cancelled' });
+    NotificationService.orderStatus(order, 'cancelled', reason);
+    NotificationService.orderCancelledForBusiness(order.business_id, orderId, reason);
   },
 };

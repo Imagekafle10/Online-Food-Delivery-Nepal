@@ -4,6 +4,7 @@ import { BusinessModel } from "../models/business.model";
 import { AppError } from "../utils/AppError";
 import { emitToOrder, emitToRider, emitToBusiness } from "../utils/socket";
 import { OrderStatus } from "../types";
+import { NotificationService } from "./notification.service";
 
 // A rider can only work on orders that are still in progress.
 function assertInProgress(order: { status: OrderStatus }) {
@@ -38,6 +39,7 @@ export const DeliveryService = {
       orderId,
       businessId: order.business_id,
     });
+    NotificationService.riderAssigned(chosen.id, orderId);
     emitToOrder(orderId, "order:status", {
       orderId,
       status: order.status,
@@ -64,6 +66,7 @@ export const DeliveryService = {
     await OrderModel.assignRider(orderId, riderId);
     await RiderModel.setStatus(riderId, "busy");
     emitToRider(riderId, "delivery:assigned", { orderId });
+    NotificationService.riderAssigned(riderId, orderId);
     emitToOrder(orderId, "order:status", {
       orderId,
       status: order.status,
@@ -85,6 +88,7 @@ export const DeliveryService = {
         "Rider picked up the order",
       );
       emitToOrder(orderId, "order:status", { orderId, status: "on_the_way" });
+      NotificationService.orderStatus(order, "on_the_way");
       emitToBusiness(order.business_id, "order:status", {
         orderId,
         status: "on_the_way",
@@ -115,6 +119,7 @@ export const DeliveryService = {
       await OrderModel.setPaymentStatus(orderId, "paid");
     }
     emitToOrder(orderId, "order:status", { orderId, status: "delivered" });
+    NotificationService.orderStatus(order, "delivered");
     emitToBusiness(order.business_id, "order:status", {
       orderId,
       status: "delivered",
